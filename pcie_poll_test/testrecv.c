@@ -236,16 +236,16 @@ int main(int argc,char* argv[])
 						gettimeofday(&start, NULL);
                               readTimes ++;
 
-                              //uint32_t crc_calc = crc32(0, rebuffer, rcb->pkt_length -4);
-                             // uint32_t crc_val = convert_ptr_u32_le(rebuffer + rcb->pkt_length -4);
-                            //  if(crc_calc != crc_val){
-                             //       printf("idx %d: crc wrong, crc_calc = %0#x, crc_val = %0#x\n", rcb->pkt_fragidx, crc_calc, crc_val);
-                            //        exit(1);
-                          //    }
-					//printf("readTimes %d\n", readTimes);			  
-                             // if(readTimes % 10000 == 0){
-                               //     printf("readTimes %d, crc_calc = %0#x, crc_val = %0#x\n", readTimes, crc_calc, crc_val);
-                             // }
+                              uint32_t crc_calc = crc32(0, rebuffer, rcb->pkt_length -4);
+                              uint32_t crc_val = convert_ptr_u32_le(rebuffer + rcb->pkt_length -4);
+                              if(crc_calc != crc_val){
+                                    printf("idx %d: crc wrong, crc_calc = %0#x, crc_val = %0#x\n", rcb->pkt_fragidx, crc_calc, crc_val);
+                                    exit(1);
+                              }
+					printf("readTimes %d\n", readTimes);			  
+                              if(readTimes % 10000 == 0){
+                                    printf("readTimes %d, crc_calc = %0#x, crc_val = %0#x\n", readTimes, crc_calc, crc_val);
+                              }
                               if((readTimes % 10000 == 0) || (readTimes > 5000000)){
                                     gettimeofday(&end, NULL);
                                     printf("recv %d packets, last 10000 packets use %ld sec,%ld usec\n", readTimes,

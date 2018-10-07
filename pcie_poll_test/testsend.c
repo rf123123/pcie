@@ -289,7 +289,7 @@ int main(int argc,char* argv[])
 		}
 #endif
             nfds = epoll_wait(epfd, events, 4, 2000);
-             printf("nfds %d\n", nfds);
+             printf("testsend nfds %d\n", nfds);
             
             for( int i = 0 ; i < nfds ; i++ ){
                   int fd = events[i].data.fd;
@@ -307,7 +307,7 @@ int main(int argc,char* argv[])
                         int count = rand()%12;
 			count = 1;
                         printf("count = %d, events %0#x  fd is %d  devs[%d].status=%d \n",count, events[i].events,events[i].data.fd,id,devs[id].status);
-
+#if 0
                         if( devs[id].status == ST_WAIT ){
                               printf("pcie EPOLLOUT\n");
                              devs[id].status = ST_ESTAB;
@@ -317,7 +317,7 @@ int main(int argc,char* argv[])
 							  printf("devs[%d].status = ST_ESTAB continue£¡\n",id);  
                               continue;
                         }
-
+#endif
                      		printf("write0 fd proceing!\n");         
                         for(int i = 0; i < count; i++){
                               struct bufctl *cb = (struct bufctl*)buffer;
