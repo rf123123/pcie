@@ -144,9 +144,10 @@ int main(int argc,char* argv[])
             int nfds = epoll_wait(epfd, events, 4, 2000);
 
             printf("testrev nfds = %d\n",nfds);
-#if 0		
+	
             for(int  i = 0 ; i < nfds ; i++ ){
                   int fd = events[i].data.fd;
+#if 0	
 
                   if(events[i].events & EPOLLOUT){
                         int count = rand() %12;
