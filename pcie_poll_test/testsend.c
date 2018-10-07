@@ -225,6 +225,7 @@ int main(int argc,char* argv[])
       while(1){
 	    char c;
 	    int nfds;
+#if 0
 	    printf("enter 's' to start\n");
 	    printf("enter 'n' to exit\n");
 		printf("enter 't' to test\n");
@@ -286,6 +287,7 @@ int main(int argc,char* argv[])
 		{
                               continue;
 		}
+#endif
             nfds = epoll_wait(epfd, events, 4, 2000);
              printf("nfds %d\n", nfds);
             
@@ -339,7 +341,7 @@ int main(int argc,char* argv[])
                               }
                               
                               int ret = write(fd, cb, cb->pkt_length);                                                          
-                     		printf("write fd proceing!\n");         
+                     		printf("write fd proceing count id:%d, len:%d!\n",i,cb->pkt_length);         
                               if( ret < 0 ){
                                     if( errno == EAGAIN || errno == ENOMEM ){
 				
@@ -364,7 +366,7 @@ int main(int argc,char* argv[])
 			      else
 			      {
 									printf("dev %d write data len:%d",id, devs[id].sendnum);
-                                    printf(" dev %d  write finish..........\n",id);
+//                                    printf(" dev %d  write finish..........\n",id);
                                     ev.data.fd = fd;
                                     ev.events = EPOLLIN;
                                     epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
@@ -375,10 +377,12 @@ int main(int argc,char* argv[])
 
                   if(events[i].events & EPOLLIN){
                         int count = rand()%12;
+			printf("read count:%d\n",count);
 				
                         for(int j = 0; j < count; j++){
 
                               int ret = read(fd, rebuffer, 4096);                              
+					printf("read count id:%d !\n",j);
                               if( ret < 0){
                                     if(errno == EAGAIN || errno == EWOULDBLOCK){
 						 printf("readError  EAGAIN !\n");
@@ -423,6 +427,9 @@ int main(int argc,char* argv[])
                                     gettimeofday(&devs[id].start, NULL);
                               }
                         }
+                                    ev.data.fd = fd;
+                                    ev.events = EPOLLOUT;
+                                    epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
                   }
             }
             //printf("end loop!\n");
