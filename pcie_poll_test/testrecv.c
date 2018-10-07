@@ -30,11 +30,11 @@ struct bufctl{
 	//签名值赋予每包的最后4byte（无需验签时此位仍需附加）
 };
 
-char buffer[8192];
-char rebuffer[8192];
+static char buffer[8192];
+static char rebuffer[8192];
 
-struct timeval start;
-struct timeval end;
+static  struct timeval start;
+static  struct timeval end;
 
 #define ST_WAIT	0
 #define ST_ESTAB 	1
@@ -125,8 +125,8 @@ int main(int argc,char* argv[])
       }
 
       ev.data.fd = opfd;
-      ev.events = EPOLLOUT;
-      //ev.events = EPOLLIN;
+      //ev.events = EPOLLOUT;
+      ev.events = EPOLLIN;
       epoll_ctl(epfd, EPOLL_CTL_ADD, opfd, &ev);
 
       int state = ST_WAIT;
@@ -142,8 +142,9 @@ int main(int argc,char* argv[])
 
       while(1){
             int nfds = epoll_wait(epfd, events, 4, 2000);
-            //printf("nfds = %d\n",nfds);
-		
+
+            printf("testrev nfds = %d\n",nfds);
+#if 0		
             for(int  i = 0 ; i < nfds ; i++ ){
                   int fd = events[i].data.fd;
 
@@ -203,7 +204,7 @@ int main(int argc,char* argv[])
                         }
                   }
              
-     
+#endif 
        	if(events[i].events & EPOLLIN){
                         //printf("begin to EPOLLIN\n");
                         int count = rand()%12;

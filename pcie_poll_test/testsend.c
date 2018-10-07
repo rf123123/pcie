@@ -46,11 +46,11 @@ struct dev{
 	struct timeval start;
 	struct timeval end;
 };
-char buffer[8192];
-char rebuffer[8192];
+static char buffer[8192];
+static char rebuffer[8192];
 
-struct timeval start;
-struct timeval end;
+static struct timeval start;
+static struct timeval end;
 
 static const unsigned int crc_32_tab_PL[] = { /* CRC polynomial */
 0x00000000, 0x1621ca79, 0x2c4394f2, 0x3a625e8b, 0x588729e4, 0x4ea6e39d, 0x74c4bd16, 0x62e5776f,
@@ -366,15 +366,17 @@ int main(int argc,char* argv[])
 			      else
 			      {
 									printf("dev %d write data len:%d",id, devs[id].sendnum);
+#if 0									
 //                                    printf(" dev %d  write finish..........\n",id);
                                     ev.data.fd = fd;
                                     ev.events = EPOLLIN;
                                     epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
+#endif									
 			      }
 			      
                         }
                   }
-
+#if 0
                   if(events[i].events & EPOLLIN){
                         int count = rand()%12;
 			printf("read count:%d\n",count);
@@ -427,10 +429,11 @@ int main(int argc,char* argv[])
                                     gettimeofday(&devs[id].start, NULL);
                               }
                         }
-                                    ev.data.fd = fd;
-                                    ev.events = EPOLLOUT;
-                                    epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
+	                    ev.data.fd = fd;
+	                    ev.events = EPOLLOUT;
+	                    epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
                   }
+#endif				  
             }
             //printf("end loop!\n");
       }
