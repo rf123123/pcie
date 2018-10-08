@@ -778,8 +778,9 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	//Read_FLag ++;
 	//PRINTK("******************<pcie56_read> Count  is %d ,    slen is %d \n",*(unsigned int *)(&RcvQ[RTail].Buffer[8]), RcvQ[RTail].len );
 	//PRINTK("<pcie56_read>:len is 0x%08x  the paket is 0x%08x   RTail is  0x%08x\n",RcvQ[RTail].len,*(unsigned int *)(RcvQ[RTail].Buffer+44),RTail);
-	recv_list[Rlisttail].status &=DMA_RCV_LIST_RESET;
+	recv_list[Rlisttail].status = DMA_RCV_LIST_RESET;
 	len = RcvQ[RTail].len;
+	memset(RcvQ[RTail].Buffer,0,len);
 	RTail = RTail + 1;
 #if 0
 	if(RTail>1023){
@@ -1240,8 +1241,8 @@ static int __init pcie56Drv_init(void)
 			PRINTK("<pcie56Drv_init>: Register interrupt successful,irq 0x%lx\n",(unsigned long )pcie56->irq);
 		}
 	ret = read_BAR0(FPGA_SOFT_VERISON);
-	PRINTK("FPGA SOFTWARE VERISON is %08x\n",ret);
-	PRINTK("FPGA SOFTWARE VERISON is %04d%02d%02d%02d%02d%02d\n",((ret>>17)&0x3f),((ret>>23)&0xf),((ret>>27)&0x1f),((ret>>12)&0x1f),((ret>>6)&0x3f),((ret>>0)&0x3f));
+	//PRINTK("FPGA SOFTWARE VERISON is %08x\n",ret);
+	PRINTK("FPGA SOFTWARE VERISON is %02d%02d%02d%02d%02d%02d\n",((ret>>17)&0x3f),((ret>>23)&0xf),((ret>>27)&0x1f),((ret>>12)&0x1f),((ret>>6)&0x3f),((ret>>0)&0x3f));
 #if 0
 	for(i=0x80;i<=0x17c;i+=4)
 	{
