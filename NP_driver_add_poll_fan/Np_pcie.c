@@ -1241,6 +1241,8 @@ static int __init pcie56Drv_init(void)
 		}
 	ret = read_BAR0(FPGA_SOFT_VERISON);
 	PRINTK("FPGA SOFTWARE VERISON is %08x\n",ret);
+	PRINTK("FPGA SOFTWARE VERISON is %04d%02d%02d%02d%02d%02d\n",((ret>>17)&0x3f),((ret>>23)&0xf),((ret>>27)&0x1f),((ret>>12)&0x1f),((ret>>6)&0x3f),((ret>>0)&0x3f));
+#if 0
 	for(i=0x80;i<=0x17c;i+=4)
 	{
 	ret = read_BAR0(i);
@@ -1250,7 +1252,7 @@ static int __init pcie56Drv_init(void)
 	ret = read_BAR0(i);
         PRINTK("FPGA test read2 user reg: 0x%x is 0x%08x\n",i,ret);
 	}
-
+#endif
 	pcie56_int_enable();
 	
  	PRINTK("<pcie56Drv_init>: pcie56_cdev major is %d. \n", pcie56_major);
