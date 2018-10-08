@@ -357,7 +357,7 @@ int main(int argc,char* argv[])
                               //printuchar(buffer, 32, tick);
                               devs[id].sendnum++;
 
-                              if(  devs[id].sendnum >= 5000){
+                              if(  devs[id].sendnum >= 5000000){
                                     printf(" dev %d  write finish..........\n",id);
                                     ev.data.fd = fd;
                                     ev.events = EPOLLIN;

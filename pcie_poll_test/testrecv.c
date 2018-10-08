@@ -141,7 +141,7 @@ int main(int argc,char* argv[])
 		buffer[i] = i&0xff;
 
       while(1){
-            int nfds = epoll_wait(epfd, events, 4, 2000);
+            int nfds = epoll_wait(epfd, events, 4, 10000);
 
             printf("testrev nfds = %d\n",nfds);
 	
