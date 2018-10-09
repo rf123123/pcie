@@ -147,6 +147,11 @@ int main(int argc,char* argv[])
 	
             for(int  i = 0 ; i < nfds ; i++ ){
                   int fd = events[i].data.fd;
+				  if(fd != opfd)
+				  	{
+				  		printf("test recv event fd: %d, dev fd: %d\n",fd,opfd);
+						continue;
+				  	}
 #if 0	
 
                   if(events[i].events & EPOLLOUT){
@@ -208,7 +213,8 @@ int main(int argc,char* argv[])
 #endif 
        	if(events[i].events & EPOLLIN){
                         //printf("begin to EPOLLIN\n");
-                        int count = rand()%12;
+                        //int count = rand()%12;
+						int count = 2;
 				
                         for(int j = 0; j < count; j++){
 
