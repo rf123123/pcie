@@ -408,6 +408,7 @@ int start_dma0(void)
 {
 	unsigned long u64addr;
 	UINT ret;
+	UINT  TDMA_Stat = 0;
 	u64addr =(UINT64)(sendlistPh+sizeof(struct send_descriptor)*0);
 	write_BAR0(DMA_SND_ADD32, (unsigned int)u64addr);	
 	write_BAR0(DMA_SND_ADD64, (unsigned int)(u64addr>>32));
@@ -415,6 +416,15 @@ int start_dma0(void)
 	write_BAR0(DMA_SND_CTRL,ret );
 	//STail=(STail+1)%MAXSENDQL;	
 	//Slisttail = STail;
+
+	TDMA_Stat = read_BAR0(DMA_SND_CTRL);        
+	TDMA_Stat= TDMA_Stat&DMA_SND_BUSY;
+	
+	while(TDMA_Stat == 0)
+	{ 	
+		TDMA_Stat= (read_BAR0(DMA_SND_CTRL))&DMA_SND_BUSY;
+	}
+	
 	return SUCCESS;
 }
 //	DMA1 Start
@@ -931,11 +941,11 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 		if(ret>0)
 		{
 			mask |=  POLLOUT|POLLWRNORM;
-			PRINTK("<pcie56_poll>:can write!" );
+			PRINTK("<pcie56_poll>:can write!\n" );
 		}
 		else
 		{
-			PRINTK("<pcie56_poll>:Other_Side_Recv fail, head:%d, tail:%d!",RHead ,RTail );
+			PRINTK("<pcie56_poll>:Other_Side_Recv fail, head:%d, tail:%d!\n",RHead ,RTail );
 		}
 
 		up(&write_sem);
