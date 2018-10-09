@@ -549,6 +549,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 	if(IntStat & DMA_RCV_INT){ 
 		IntStat = RHead;
+		Recv_count =0;
 		//PRINTK("<pcie56_interrupt_recv>:recv complete interrupt!\n");
 		while(recv_list[Rlisthead].status&DMA_RCV_LIST_FLAG){
 			//pkt_id =  *(unsigned int *)(RcvQ[Rlisthead].Buffer+40);
@@ -558,13 +559,13 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		//	}
 			//tasklet_schedule(&int_tasklet_recv);
 			Rlisthead = (Rlisthead + 1)%MAXRECVQL;
-			Recv_Flag ++;
-		//	Recv_count ++;
+			Recv_Flag = (Rlisthead < IntStat);
+			Recv_count ++;
 		}
 		//Rlisthead = (Rlisthead +MAXRECVQL- 1)%MAXRECVQL;
 		//Rlisthead = (Rlisthead + 1)%MAXRECVQL;		
 		RHead = Rlisthead; 
-		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d!\n",IntStat,RHead);
+		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",IntStat,RHead,Recv_count,Recv_Flag);
 		wake_up_interruptible(&recvinq);
 	}
 	return IRQ_HANDLED;
@@ -796,7 +797,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	//write_BAR0(RECV_OWN_HEAD, (Own_head&0xffff));
 	//datalen = datalen -32;
 	up(&read_sem);
-	//PRINTK("<======================<PCIe_read> len:%d\n",datalen);
+	PRINTK("<======================<PCIe_read> datalen:%d, new RTail:%d,len:%d\n",datalen,RTail,len);
 	return datalen;
 }
 /***********************************************************************
