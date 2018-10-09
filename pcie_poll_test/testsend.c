@@ -288,7 +288,7 @@ int main(int argc,char* argv[])
                               continue;
 		}
 #endif
-            nfds = epoll_wait(epfd, events, 4, 2000);
+            nfds = epoll_wait(epfd, events, 1, 2000);
              printf("testsend nfds %d\n", nfds);
             
             for( int i = 0 ; i < nfds ; i++ ){
