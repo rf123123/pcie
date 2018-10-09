@@ -131,42 +131,6 @@ int main(int argc,char* argv[])
 	struct dev devs[4];
 	  int re;
 	
- /*   	 devs[0].fd= open("/dev/pcie560",O_RDWR);
-      if(devs[0].fd < 0){
-            printf("open fd error!\n");
-            return -1;
-      }
-	  
-	  
-  	 devs[1].fd = open("/dev/pcie561",O_RDWR);
-      if(devs[1].fd < 0){
-            printf("open fd error!\n");
-            return -1;
-      }
-	  
-    	devs[2].fd = open("/dev/pcie562",O_RDWR);
-     if(devs[2].fd < 0){
-            printf("open fd error!\n");
-            return -1;
-      }
-	  
-      devs[3].fd = open("/dev/pcie563",O_RDWR);
-      if(devs[3].fd < 0){
-            printf("open fd error!\n");
-            return -1;
-      	}
-	devs[4].fd = open("/dev/pcie564",O_RDWR);
-     if(devs[4].fd < 0){
-            printf("open fd error!\n");
-            return -1;
-      }
-	  
-      devs[5].fd = open("/dev/pcie565",O_RDWR);
-      if(devs[5].fd < 0){
-            printf("open fd error!\n");
-            return -1;
-      }
-  */
      devs[0].fd= open("/dev/pcie56",O_RDWR);
       if(devs[0].fd < 0){
             printf("open fd error!\n");
@@ -225,100 +189,36 @@ int main(int argc,char* argv[])
       while(1){
 	    char c;
 	    int nfds;
-#if 0
-	    printf("enter 's' to start\n");
-	    printf("enter 'n' to exit\n");
-		printf("enter 't' to test\n");
-		printf("enter 'r' to read\n");
-		printf("enter 'w' to write\n");
-	    c=getchar();
-	    if(c == 'n')
-		{
-			close(devs[0].fd);
-			exit(1);
-		}
-		else if(c == 't')
-			{
-				int reg;
-				printf("enter reg(\\%x) to test\n");
-				scanf("%x",&reg);
-				nfds = ioctl(devs[0].fd,0x00080005,reg);
-				printf("config test reg:0x%x,data:0x%x\n",reg,nfds);
-				continue;
-			}
-		else if(c == 'r')
-		{
-			memset(rebuffer, 0, 8192);
-			 re = read(devs[0].fd, rebuffer, 4096); 
-			 		printf("read: ret: %d\n",re);
-			if(re > 0)
-			{
-			 for(int i=0;i <100; i++)
-			 	{
-			 		printf("read reg: %d, data:%d\n",i,rebuffer[i]&0xff);
-			 	}
-			 for(int i=re-1;i >re-1-100; i--)
-			 	{
-			 		printf("read reg: %d, data:%d\n",i,rebuffer[i]&0xff);
-			 	}
-			}
-				continue;
-		}
-		else if(c == 'w')
-		{
-			int len;
-			printf("enter len, default 0 as 4096\n");
-			scanf("%d",&len);
-			if((len <= 0)|| (len >4096))
-			{
-				len = 4096;
-			}
-			printf("get len:%d\n",len);
-
-			for(int i=0;i< len; i++)
-				{
-					rebuffer[i] = i&0xff;
-				}
-			re = write(devs[0].fd, rebuffer, len);  
-			 		printf("write: len:%d ret: %d\n",len,re);
-				continue;
-		} 
-	    else if(c!='s')
-		{
-                              continue;
-		}
-#endif
             nfds = epoll_wait(epfd, events, 1, 2000);
              //printf("testsend nfds %d\n", nfds);
-            
+
             for( int i = 0 ; i < nfds ; i++ ){
                   int fd = events[i].data.fd;
+				if(fd == devs[0].fd)
+					{
+					id = devs[0].id;
+					}
+				else
+					{
+						printf("testwrite id:%d error\n",id);
+						break;
+					}
 
 			int id;
-
+#if 0
 			for(int j=0;j<4;j++)
 			{
 			if(fd == devs[j].fd)
 				id = devs[j].id;
 				break;
 			}
+#endif	
 			
                   if( events[i].events & EPOLLOUT){
 
-                        int count = rand()%12;
-			count = 1;
+                        //int count = rand()%12;
+						int count = 1;
                         //printf("count = %d, events %0#x  fd is %d  devs[%d].status=%d \n",count, events[i].events,events[i].data.fd,id,devs[id].status);
-#if 0
-                        if( devs[id].status == ST_WAIT ){
-                              printf("pcie EPOLLOUT\n");
-                             devs[id].status = ST_ESTAB;
-                              ev.data.fd = fd;
-                              ev.events = EPOLLIN|EPOLLOUT;
-                              epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
-							  printf("devs[%d].status = ST_ESTAB continue£¡\n",id);  
-                              continue;
-                        }
-#endif
                      		//printf("write0 fd proceing!\n");         
                         for(int i = 0; i < count; i++){
                               struct bufctl *cb = (struct bufctl*)buffer;
@@ -352,13 +252,10 @@ int main(int argc,char* argv[])
                                     perror("write failed");
                                     exit(1);
                               }
-                     		//printf("write2 fd proceing!\n");         
-                              //char tick[18] = "";
-                              //snprintf(tick, 18, "%d: ", writeTimes);
-                              //printuchar(buffer, 32, tick);
+
                               devs[id].sendnum++;
 
-                              if(  devs[id].sendnum >= 5000000){
+                              if(devs[id].sendnum >= 5000000){
                                     printf(" dev %d  write finish..........\n",id);
                                     ev.data.fd = fd;
                                     ev.events = EPOLLIN;
@@ -367,74 +264,10 @@ int main(int argc,char* argv[])
 			      else
 			      {
 									//printf("dev %d write data len:%d",id, devs[id].sendnum);
-#if 0									
-//                                    printf(" dev %d  write finish..........\n",id);
-                                    ev.data.fd = fd;
-                                    ev.events = EPOLLIN;
-                                    epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
-#endif									
 			      }
 			      
                         }
                   }
-#if 0
-                  if(events[i].events & EPOLLIN){
-                        int count = rand()%12;
-			printf("read count:%d\n",count);
-				
-                        for(int j = 0; j < count; j++){
-
-                              int ret = read(fd, rebuffer, 4096);                              
-					printf("read count id:%d !\n",j);
-                              if( ret < 0){
-                                    if(errno == EAGAIN || errno == EWOULDBLOCK){
-						 printf("readError  EAGAIN !\n");
-						continue;
-										  
-                                    }
-                                    printf("errno = %d, readError !\n", errno);
-                                    exit(1);
-                              }
-					printf("read SUCCESS !\n");
-                              
-                              struct bufctl  *rcb = (struct bufctl*)rebuffer;
-                              //printuchar(rebuffer, 32);
-                                                                  
-                              if((rcb->pkt_fragidx != devs[id].recvnum) || (ret < rcb->pkt_length)){
-                                    printf("read() return %d, rcb->pkt_length = %d, rcb->pkt_fragidx = %d, devs[%d].recvnum = %d\n", 
-                                          ret, rcb->pkt_length, rcb->pkt_fragidx, id,devs[id].recvnum);
-					printf(" devs[0].recvnum = %d   devs[1].recvnum = %d devs[2].recvnum = %d   devs[3].recvnum = %d     \n",  devs[0].recvnum,devs[1].recvnum,  devs[2].recvnum,devs[3].recvnum);
-                                    printuchar(rebuffer, 32, "err_packet: ");
-                                    exit(1);
-                              }
-							  printf("read() return %d, rcb->pkt_length = %d, rcb->pkt_fragidx = %d, devs[%d].recvnum = %d\n", 
-									ret, rcb->pkt_length, rcb->pkt_fragidx, id,devs[id].recvnum);
-                              devs[id].recvnum ++;
-                              
-                              uint32_t crc_calc = crc32(0, rebuffer, rcb->pkt_length -4);
-                              uint32_t crc_val = convert_ptr_u32_le(rebuffer + rcb->pkt_length -4);
-                              if(crc_calc != crc_val){
-                                    printf("crc wrong, crc_calc = %0#x, crc_val = %0#x\n", crc_calc, crc_val);
-                                    exit(1);
-                              }
-                              if(devs[id].recvnum %1000 == 0){
-							  	
-                                    printf("\n\n\ndevs[%d]:readTimes %d, crc_calc = %0#x, crc_val = %0#x\n", id,devs[id].recvnum, crc_calc, crc_val);
-                              }
-
-                              if((devs[id].recvnum % 1000 == 0) || (devs[id].recvnum > 5000)){
-                                    printf("events %0#x\n", events[i].events);
-                                    gettimeofday(&devs[id].end, NULL);
-                                    printf("dev id %d  :recv %d packets, last 10000 packets use %ld sec,%ld usec\n", id,devs[id].recvnum,
-                                          devs[id].end.tv_sec - devs[id].start.tv_sec, devs[id].end.tv_usec - devs[id].start.tv_usec);
-                                    gettimeofday(&devs[id].start, NULL);
-                              }
-                        }
-	                    ev.data.fd = fd;
-	                    ev.events = EPOLLOUT;
-	                    epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
-                  }
-#endif				  
             }
             //printf("end loop!\n");
       }
