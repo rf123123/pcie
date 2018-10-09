@@ -223,6 +223,7 @@ int main(int argc,char* argv[])
 
                               if( ret < 0){
                                     if(errno == EAGAIN || errno == EWOULDBLOCK){
+										printf("read fd proceing! error0:%d error1:%d\n",(errno == EAGAIN) ,( errno == EWOULDBLOCK));		  
                                           continue;
                                     }
                                     printf("errno = %d, readError !\n", errno);
