@@ -514,7 +514,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 #endif
 	
 	if(IntStat & DMA_SND_INT){
-	PRINTK("<pcie56_interrupt_send>:send complete interrupt!\n");
+	//PRINTK("<pcie56_interrupt_send>:send complete interrupt!\n");
 /*		while(!(send_list[STail].NextDesc_low&SND_LIST_END)){	
 			pkt_ids = *(unsigned int *)(SndQ[STail].Buffer+44);
 			if(pkt_ids != SCount)
@@ -550,12 +550,12 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 
 	if(IntStat & DMA_RCV_INT){ 
-		PRINTK("<pcie56_interrupt_recv>:recv complete interrupt!\n");
+		//PRINTK("<pcie56_interrupt_recv>:recv complete interrupt!\n");
 		while(recv_list[Rlisthead].status&DMA_RCV_LIST_FLAG){
 			//pkt_id =  *(unsigned int *)(RcvQ[Rlisthead].Buffer+40);
 		//	if(Recv_Flag != pkt_id)
 		//	{
-			PRINTK("<*****INT*****> RHead is %d Recv_count is %d \n",Rlisthead,Recv_Flag);
+			//PRINTK("<*****INT*****> RHead is %d Recv_count is %d \n",Rlisthead,Recv_Flag);
 		//	}
 			//tasklet_schedule(&int_tasklet_recv);
 			Rlisthead = (Rlisthead + 1)%MAXRECVQL;
@@ -693,10 +693,10 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	int ret;
 	//int num_count;
 	int datalen,length;
-	printk(KERN_DEBUG"[pcie56_read]: into the function.\n");
+	//printk(KERN_DEBUG"[pcie56_read]: into the function.\n");
 	if (down_interruptible(&read_sem))
 		return -EAGAIN;
-	printk(KERN_DEBUG"[pcie56_read]2: into the function.\n");
+	//printk(KERN_DEBUG"[pcie56_read]2: into the function.\n");
 /*	while(recv_list[Rlisttail].RecvFlagtag==1){
 		if( !(recv_list[Rlisttail].status&DMA_RCV_LIST_FLAG)){
 			up(&read_sem);
@@ -797,7 +797,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	//write_BAR0(RECV_OWN_HEAD, (Own_head&0xffff));
 	//datalen = datalen -32;
 	up(&read_sem);
-	PRINTK("<======================<PCIe_read> len:%d\n",datalen);
+	//PRINTK("<======================<PCIe_read> len:%d\n",datalen);
 	return datalen;
 }
 /***********************************************************************
@@ -825,7 +825,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	}
 #endif
 	TDMA_Stat = read_BAR0(DMA_SND_CTRL);        
-	printk("read DMA_SND_CTRL:0x%x,data:0x%x\n",DMA_SND_CTRL,TDMA_Stat);
+	//printk("read DMA_SND_CTRL:0x%x,data:0x%x\n",DMA_SND_CTRL,TDMA_Stat);
 	TDMA_Stat= TDMA_Stat&DMA_SND_BUSY;
 	//spin_lock_bh(&sendLock);
 	if(TDMA_Stat != 0)
@@ -838,7 +838,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	}
 	
 	slen=count+8;
-	printk("count:%x slen:%x\n",count,slen);
+	//printk("count:%x slen:%x\n",count,slen);
 #if 1
 	*(unsigned int *)(&SndQ[0].Buffer[0]) = ((0xd6fa<<16)|((buffCount++)&0xffff));
 	//*(unsigned int *)(&SndQ[0].Buffer[4]) = (slen<<16)+slen;
@@ -856,7 +856,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		printk("pcie56_write line:%d\n",__LINE__);
 		return -EIO;
 	}
-		printk("pcie56_write line:%d count:%d\n",__LINE__,count);
+	//	printk("pcie56_write line:%d count:%d\n",__LINE__,count);
 	 ret = __copy_from_user(&SndQ[0].Buffer[8], buf, count);
 	 if(ret)
     	 {	up(&write_sem);
@@ -897,7 +897,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		
 //	}
 	up(&write_sem);
-		printk("pcie56_write len:%d,count:%dline:%d\n",slen,count,__LINE__);
+	//	printk("pcie56_write len:%d,count:%dline:%d\n",slen,count,__LINE__);
 	//spin_unlock_bh(&sendLock);
     	return count;
 	
@@ -916,7 +916,7 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 	 * if "wp" is right behind "rp" and empty if the
 	 * two are equal.
 	 */
-	PRINTK("<pcie56_poll>:in poll" );
+	//PRINTK("<pcie56_poll>:in poll" );
 	//spin_lock_bh(&lock);
 	poll_wait(filp, &sendoutq,  	wait);
 	poll_wait(filp, &recvinq, 	wait);
@@ -951,7 +951,7 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 	}
 
 	//spin_unlock_bh(&lock);
-	PRINTK("<******pcie56_poll*********>:befor return ! mask is 0x%x \n",mask );
+	//PRINTK("<******pcie56_poll*********>:befor return ! mask is 0x%x \n",mask );
 	return mask;
 }
 /***********************************************************************

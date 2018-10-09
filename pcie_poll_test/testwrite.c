@@ -137,32 +137,6 @@ int main(int argc,char* argv[])
             return -1;
       }
 	  
-#if 0	  
-  	 devs[1].fd = open("/dev/pcie563",O_RDWR);
-      if(devs[1].fd < 0){
-            printf("open fd error!\n");
-            return -1;
-      }
-	  
-    	devs[2].fd = open("/dev/pcie564",O_RDWR);
-     if(devs[2].fd < 0){
-            printf("open fd error!\n");
-            return -1;
-      }
-	  
-      devs[3].fd = open("/dev/pcie565",O_RDWR);
-      if(devs[3].fd < 0){
-            printf("open fd error!\n");
-            return -1;
-      	}
-     
-	  
-   //  opfd[5] = open("/dev/pcie565",O_RDWR);
-    //  if(opfd[5] < 0){
-   //         printf("open fd error!\n");
- //           return -1;
-   //   }
-#endif
 	for(int  i = 0;i < 1;i++)
 	{
 		devs[i].id = i;
@@ -190,7 +164,7 @@ int main(int argc,char* argv[])
 	    char c;
 	    int nfds;
             nfds = epoll_wait(epfd, events, 1, 2000);
-            printf("testsend nfds %d\n", nfds);
+            //printf("testsend nfds %d\n", nfds);
 
             for( int i = 0 ; i < nfds ; i++ ){
                   int fd = events[i].data.fd;

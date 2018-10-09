@@ -243,14 +243,14 @@ int main(int argc,char* argv[])
                                     exit(1);
                               }
 					//printf("readTimes %d\n", readTimes);			  
-                              if(readTimes % 10000 == 0){
+                              if(readTimes % 100000 == 0){
                                     printf("readTimes %d, crc_calc = %0#x, crc_val = %0#x\n", readTimes, crc_calc, crc_val);
                               }
-                              if((readTimes % 10000 == 0) || (readTimes > 5000000)){
+                              if((readTimes % 100000 == 0) || (readTimes > 5000000)){
                                     gettimeofday(&end, NULL);
                                     printf("recv %d packets, last 10000 packets use %ld sec,%ld usec\n", readTimes,
                                           end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);
-						speed = ( (rcb->pkt_length*8*10000)/((end.tv_sec-start.tv_sec)*1000000+end.tv_usec - start.tv_usec))*1000000/1024/1024;
+						speed = ( (rcb->pkt_length*8*100000)/((end.tv_sec-start.tv_sec)*1000000+end.tv_usec - start.tv_usec))*1000000/1024/1024;
 					  	 printf("speed is %ld Mbps\n",speed);
                                     gettimeofday(&start, NULL);
                               }
