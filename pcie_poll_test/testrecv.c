@@ -214,7 +214,7 @@ int main(int argc,char* argv[])
        	if(events[i].events & EPOLLIN){
                         //printf("begin to EPOLLIN\n");
                         //int count = rand()%12;
-						int count = 2;
+						int count = 1;
 				
                         for(int j = 0; j < count; j++){
 
