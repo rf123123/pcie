@@ -190,10 +190,11 @@ int main(int argc,char* argv[])
 	    char c;
 	    int nfds;
             nfds = epoll_wait(epfd, events, 1, 2000);
-             //printf("testsend nfds %d\n", nfds);
+            printf("testsend nfds %d\n", nfds);
 
             for( int i = 0 ; i < nfds ; i++ ){
                   int fd = events[i].data.fd;
+			int id;
 				if(fd == devs[0].fd)
 					{
 					id = devs[0].id;
@@ -204,7 +205,6 @@ int main(int argc,char* argv[])
 						break;
 					}
 
-			int id;
 #if 0
 			for(int j=0;j<4;j++)
 			{

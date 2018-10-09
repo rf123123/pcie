@@ -10,7 +10,7 @@ CPPFLAGS +=-D_REENTRANT -Wall -Wunused -std=gnu99
 OBJS += testrecv.o   testsend.o testsend_4k.o
 LIBS +=
 
-all : testrecv testsend testsend_4k
+all : testrecv testsend testsend_4k testwrite
 
 $(OBJS):%.o : %.c
 	$(CC)  $(CPPFLAGS)  -o $@ -c $<
@@ -21,8 +21,11 @@ testrecv: testrecv.o
 testsend:testsend.o
 	$(CC)  $(LDDFLAGS) -o $@  $^ $(LIBS)
 
+testwrite:testwrite.o
+	$(CC)  $(LDDFLAGS) -o $@  $^ $(LIBS)
+
 testsend_4k:testsend_4k.o
 	$(CC)  $(LDDFLAGS) -o $@  $^ $(LIBS)
 clean:
-	rm -f  *.o   testrecv testsend testesn_4k
+	rm -f  *.o   testrecv testsend testesn_4k testwrite
 	
