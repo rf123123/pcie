@@ -720,7 +720,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	//PRINTK("recv_list[%d].status is 0x%08x \n",Rlisttail,recv_list[Rlisttail].status);
 	if( !(recv_list[Rlisttail].status&DMA_RCV_LIST_FLAG)){
 		up(&read_sem);
-		PRINTK("2.there is no Data to Read!\n");
+		//PRINTK("2.there is no Data to Read!\n");
 		return -EAGAIN;
 		}
 //	SetBuffer_BYTE_ChgBELE(RcvQ[RTail].Buffer,8);
