@@ -388,7 +388,7 @@ int Other_Side_Recv(void)
 	int ret;
 		if(RHead >= RTail)
 		{
-			ret = RTail+MAXRECVQL-RHead
+			ret = RTail+MAXRECVQL-RHead;
 		}
 		else
 		{
@@ -809,6 +809,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	if(ret <= 0)
 	{
 		up(&write_sem);
+		PRINTK("<pcie56_write>:Other_Side_Recv fail, head:%d, tail:%d!",RHead ,RTail );
 		return -EAGAIN;
 	}
 #endif
@@ -931,6 +932,10 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 		{
 			mask |=  POLLOUT|POLLWRNORM;
 			PRINTK("<pcie56_poll>:can write!" );
+		}
+		else
+		{
+			PRINTK("<pcie56_poll>:Other_Side_Recv fail, head:%d, tail:%d!",RHead ,RTail );
 		}
 
 		up(&write_sem);
