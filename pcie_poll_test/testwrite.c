@@ -163,7 +163,7 @@ int main(int argc,char* argv[])
  //           return -1;
    //   }
 #endif
-	for(int  i = 0;i < 4;i++)
+	for(int  i = 0;i < 1;i++)
 	{
 		devs[i].id = i;
 		devs[i].recvnum = 0;
@@ -201,7 +201,7 @@ int main(int argc,char* argv[])
 					}
 				else
 					{
-						printf("testwrite id:%d error\n",id);
+						printf("testwrite id:%d event fd: %d, dev fd:%d error\n",id,fd,devs[0].id);
 						break;
 					}
 
