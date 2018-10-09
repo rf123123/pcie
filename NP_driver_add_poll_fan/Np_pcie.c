@@ -548,6 +548,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 
 	if(IntStat & DMA_RCV_INT){ 
+		IntStat = RHead;
 		//PRINTK("<pcie56_interrupt_recv>:recv complete interrupt!\n");
 		while(recv_list[Rlisthead].status&DMA_RCV_LIST_FLAG){
 			//pkt_id =  *(unsigned int *)(RcvQ[Rlisthead].Buffer+40);
@@ -563,7 +564,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		//Rlisthead = (Rlisthead +MAXRECVQL- 1)%MAXRECVQL;
 		//Rlisthead = (Rlisthead + 1)%MAXRECVQL;		
 		RHead = Rlisthead; 
-	//	PRINTK("<pcie56_interrupt_recv>:before wake up recvinq!\n");
+		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d!\n",IntStat,RHead);
 		wake_up_interruptible(&recvinq);
 	}
 	return IRQ_HANDLED;
@@ -930,6 +931,10 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 			{
 				mask |= POLLIN|POLLRDNORM;
 				PRINTK("<pcie56_poll>:can read!\n" );
+			}
+			else
+			{
+				PRINTK("<pcie56_poll>:can not read! head:%d, tal:%d\n", RHead ,RTail);
 			}
 		up(&read_sem);
 	}

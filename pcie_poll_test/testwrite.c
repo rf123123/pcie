@@ -126,7 +126,7 @@ static uint32_t crc32(uint32_t init_crc, const void *in, int inlen)
 int main(int argc,char* argv[])
 {
       struct epoll_event ev,events[4];
-      int epfd = epoll_create(256);
+      int epfd = epoll_create(1024);
       printf("epfd = %d\n",epfd);
 	struct dev devs[4];
 	  int re;

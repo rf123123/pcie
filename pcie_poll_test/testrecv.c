@@ -114,7 +114,7 @@ int main(int argc,char* argv[])
 {
       struct epoll_event ev,events[4];
 	int i;
-      int epfd = epoll_create(256);
+      int epfd = epoll_create(1024);
       printf("epfd = %d\n",epfd);
 
       int opfd = open("/dev/pcie56",O_RDWR);
