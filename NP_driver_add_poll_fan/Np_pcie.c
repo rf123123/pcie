@@ -382,32 +382,20 @@ void pcie56_int_enable()
 /*******************************************************************
  read the reg of other side driver recv
 ********************************************************************/
+#define MAX_PACK_SAFE 10
 int Other_Side_Recv(void)
 {
-	int other_head,head_flag;
-	int other_tail,tail_flag;
 	int ret;
-#if 0
-	ret = read_BAR0(RECV_OTHER_COUNT);
-	head_flag = (ret>>15)&0x01;
-	tail_flag = (ret>>31)&0x01;
-	other_head = ret&0x00007fff;
-	other_tail = (ret>>16)&0x7fff;
-	if(other_head == other_tail)
-	{
-		if(head_flag == tail_flag)
-			ret = MAXRECVQL;
-		else
-			ret = 0;
-	}else{
-		if(other_tail > other_head)
-			ret = (other_head+MAXRECVQL -other_tail)%MAXRECVQL;
-		else
-			ret= other_head -other_tail;
+		if(RHead >= RTail)
+		{
+			ret = RTail+MAXRECVQL-RHead
 		}
-#endif 
-	ret =0x100;
-	return ret; 
+		else
+		{
+			ret = RTail-RHead;
+		}
+	
+	return (ret > MAX_PACK_SAFE); 
 }
 
 
@@ -816,9 +804,9 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		printk("pcie56_write line:%d\n",__LINE__);
 		return - EAGAIN;	
 	}
-#if 0	
+#if 1	
 	ret=Other_Side_Recv();
-	if(ret <64)
+	if(ret <= 0)
 	{
 		up(&write_sem);
 		return -EAGAIN;
@@ -926,7 +914,7 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 
 	if (down_interruptible(&read_sem)==0) 								
 	{
-		PRINTK("<pcie56_poll>: pollin  select!\n");
+		//PRINTK("<pcie56_poll>: pollin  select!\n");
 		if( recv_list[Rlisttail].status & DMA_RCV_LIST_FLAG )
 			{
 				mask |= POLLIN|POLLRDNORM;
@@ -938,15 +926,13 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 	if (down_interruptible(&write_sem)==0) 									  
 	{
 		ret = Other_Side_Recv();
-		PRINTK("<pcie56_poll>:write ret is %d!\n",ret );
-		if(ret>64)
+		//PRINTK("<pcie56_poll>:write ret is %d!\n",ret );
+		if(ret>0)
 		{
 			mask |=  POLLOUT|POLLWRNORM;
 			PRINTK("<pcie56_poll>:can write!" );
 		}
-		else{
-			tasklet_schedule(&int_tasklet_recv);
-		}
+
 		up(&write_sem);
 	}
 
