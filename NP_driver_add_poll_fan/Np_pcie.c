@@ -549,7 +549,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 	if(IntStat & DMA_RCV_INT){ 
 		IntStat = RHead;
-		Recv_count =0;
+		//Recv_count =0;
 		//PRINTK("<pcie56_interrupt_recv>:recv complete interrupt!\n");
 		while(recv_list[Rlisthead].status&DMA_RCV_LIST_FLAG){
 			//pkt_id =  *(unsigned int *)(RcvQ[Rlisthead].Buffer+40);
@@ -559,12 +559,13 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		//	}
 			//tasklet_schedule(&int_tasklet_recv);
 			Rlisthead = (Rlisthead + 1)%MAXRECVQL;
-			Recv_Flag = (Rlisthead < IntStat);
+			//Recv_Flag = (Rlisthead < Rlisttail);
 			Recv_count ++;
 		}
 		//Rlisthead = (Rlisthead +MAXRECVQL- 1)%MAXRECVQL;
 		//Rlisthead = (Rlisthead + 1)%MAXRECVQL;		
 		RHead = Rlisthead; 
+		Recv_Flag = (Rlisthead != Rlisttail);
 		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",IntStat,RHead,Recv_count,Recv_Flag);
 		wake_up_interruptible(&recvinq);
 	}
@@ -718,11 +719,18 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 		}
 */
 	//PRINTK("recv_list[%d].status is 0x%08x \n",Rlisttail,recv_list[Rlisttail].status);
+
 	if( !(recv_list[Rlisttail].status&DMA_RCV_LIST_FLAG)){
 		up(&read_sem);
 		//PRINTK("2.there is no Data to Read!\n");
 		return -EAGAIN;
 		}
+	if(!Recv_Flag)
+	{
+		PRINTK("READ data in, but not IRQ!\n");
+		return -EAGAIN;
+	}
+	
 //	SetBuffer_BYTE_ChgBELE(RcvQ[RTail].Buffer,8);
 	
 	length = recv_list[Rlisttail].status & DMA_RCV_LIST_RESET;
