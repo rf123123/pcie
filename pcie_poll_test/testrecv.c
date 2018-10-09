@@ -143,7 +143,7 @@ int main(int argc,char* argv[])
       while(1){
             int nfds = epoll_wait(epfd, events, 4, 10000);
 
-            printf("testrev nfds = %d\n",nfds);
+            //printf("testrev nfds = %d\n",nfds);
 	
             for(int  i = 0 ; i < nfds ; i++ ){
                   int fd = events[i].data.fd;
@@ -208,7 +208,7 @@ int main(int argc,char* argv[])
 #endif 
        	if(events[i].events & EPOLLIN){
                         //printf("begin to EPOLLIN\n");
-                        int count = rand()%12;
+                        int count = rand()%3;
 				
                         for(int j = 0; j < count; j++){
 
@@ -242,7 +242,7 @@ int main(int argc,char* argv[])
                                     printf("idx %d: crc wrong, crc_calc = %0#x, crc_val = %0#x\n", rcb->pkt_fragidx, crc_calc, crc_val);
                                     exit(1);
                               }
-					printf("readTimes %d\n", readTimes);			  
+					//printf("readTimes %d\n", readTimes);			  
                               if(readTimes % 10000 == 0){
                                     printf("readTimes %d, crc_calc = %0#x, crc_val = %0#x\n", readTimes, crc_calc, crc_val);
                               }
