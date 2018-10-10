@@ -78,8 +78,8 @@ MODULE_LICENSE("GPL");
 
 /////////////////////////////////////////////////////
 #define MAXENCRYPT                32
-#define MAXRECVQL			1024
-#define MAXSENDQL			1024
+#define MAXRECVQL			4096
+#define MAXSENDQL			4096
 #define FRAMELEN			4096
 #define DMA_FIFO_SIZE		FRAMELEN    //DMA BUFFER,default is 8K
 
