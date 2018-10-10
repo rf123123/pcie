@@ -382,7 +382,7 @@ void pcie56_int_enable()
 /*******************************************************************
  read the reg of other side driver recv
 ********************************************************************/
-#define MAX_PACK_RECV_SAFE 100
+#define MAX_PACK_RECV_SAFE 500
 int Other_Side_Recv(void)
 {
 	int ret;
@@ -399,7 +399,7 @@ int Other_Side_Recv(void)
 	return (ret > MAX_PACK_RECV_SAFE); 
 }
 
-#define MAX_PACK_SEND_SAFE 100
+#define MAX_PACK_SEND_SAFE 500
 
 int Other_Side_Send(void)
 {
@@ -550,7 +550,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		//		}
 		
 		
-		PRINTK("<pcie56_interrupt_send>:Slisttail is : %d\n",STail);
+		PRINTK("<pcie56_interrupt_send>:Slisttail is : %d,STail:%d \n",Rlisttail,STail);
 		//spin_lock_bh(&sendLock);
 		if((SHead != STail)&&(0==(read_BAR0(DMA_SND_CTRL)&DMA_SND_BUSY))){
 			start_dma0();
