@@ -307,8 +307,8 @@ struct send_descriptor{
 	u32 SendFlagtag2;
 	}*send_list;
 
-//spinlock_t sendLock = SPIN_LOCK_UNLOCKED;
-//spinlock_t recvLock = SPIN_LOCK_UNLOCKED;
+spinlock_t sendLock = SPIN_LOCK_UNLOCKED;
+spinlock_t recvLock = SPIN_LOCK_UNLOCKED;
 //spinlock_t sQLock = SPIN_LOCK_UNLOCKED;
 //spinlock_t rQLock = SPIN_LOCK_UNLOCKED;
 
@@ -420,7 +420,7 @@ int Other_Side_Send(void)
 /***********************************************************************
 		DMA0 
 ************************************************************************/
-#define MAX_READ_BUSY_COUNT  1000
+#define MAX_READ_BUSY_COUNT  100
 int start_dma0(void)
 {
 	unsigned long u64addr;
@@ -746,7 +746,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	if(!Recv_Flag)
 	{
 		PRINTK("READ data in, but not IRQ!\n");
-#if 0		
+		spin_lock_irq(&recvLock);
 		Recv_count =0;
 		ret = Rlisthead;
 		//PRINTK("<pcie56_interrupt_recv>:recv complete interrupt!\n");
@@ -765,6 +765,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 		//Rlisthead = (Rlisthead + 1)%MAXRECVQL;		
 		RHead = Rlisthead; 
 		Recv_Flag = (Rlisthead != Rlisttail);
+		spin_unlock_irq(&recvLock);
 #endif
 		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",ret,RHead,Recv_count,Recv_Flag);
 		up(&read_sem);
@@ -826,23 +827,16 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	//Read_FLag ++;
 	//PRINTK("******************<pcie56_read> Count  is %d ,    slen is %d \n",*(unsigned int *)(&RcvQ[RTail].Buffer[8]), RcvQ[RTail].len );
 	//PRINTK("<pcie56_read>:len is 0x%08x  the paket is 0x%08x   RTail is  0x%08x\n",RcvQ[RTail].len,*(unsigned int *)(RcvQ[RTail].Buffer+44),RTail);
+	
+	spin_lock_irq(&recvLock);
 	recv_list[Rlisttail].status = DMA_RCV_LIST_RESET;
 	len = RcvQ[RTail].len;
 	memset(RcvQ[RTail].Buffer,0,len);
-	RTail = RTail + 1;
-#if 0
-	if(RTail>1023){
-			//Own_head = (Own_head&0x8000)+RTail +0x8000;
-			
-		}
-	else{
-			//Own_head = (Own_head&0x8000)+RTail;
-		}
-#endif
-	RTail %= MAXRECVQL;
+	RTail = (RTail + 1)%MAXRECVQL;
 	Rlisttail = RTail;
-	
 	Recv_Flag = (Rlisthead != Rlisttail);
+	spin_unlock_irq(&recvLock);
+	
 	//write_BAR0(RECV_OWN_HEAD, (Own_head&0xffff));
 	//datalen = datalen -32;
 	up(&read_sem);
@@ -898,16 +892,12 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 #endif
 	slen=count+8;
 	//printk("count:%x slen:%x\n",count,slen);
-#if 1
+
+
 	*(unsigned int *)(&SndQ[SHead].Buffer[0]) = ((0xd6fa<<16)|((buffCount++)&0xffff));
 	//*(unsigned int *)(&SndQ[0].Buffer[4]) = (slen<<16)+slen;
 	*(unsigned int *)(&SndQ[SHead].Buffer[4]) = slen&0xffff;
-#else
-	*(unsigned int *)(&SndQ[0].Buffer[0]) = (((slen&0xffff)<<16)|((slen&0xffff)));
-	//*(unsigned int *)(&SndQ[0].Buffer[4]) = (slen<<16)+slen;
-	*(unsigned int *)(&SndQ[0].Buffer[4]) = (((slen&0xffff)<<16)|((slen&0xffff)));
-	printk("buff[0]=%x buff[4]=%x\n",*(unsigned int *)(&SndQ[0].Buffer[0]),*(unsigned int *)(&SndQ[0].Buffer[4]));
-#endif
+
 	slen = (slen + 7)&0xfffffff8 ;
 	if (GLOBALMEM_SIZE < slen)
 	{
@@ -935,10 +925,12 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	
 //	SetBuffer_BYTE_ChgBELE(SndQ[0].Buffer,8);	
 	SndQ[SHead].len = slen;
-//	Change_BELE((char *)&SndQ[0].len);	
+//	Change_BELE((char *)&SndQ[0].len);
+	spin_lock_irq(&sendLock);
 	send_list[SHead].length = SndQ[SHead].len;
 	send_list[SHead].NextDesc_low |=SND_LIST_END ;
 	send_list[(SHead+MAXSENDQL-1)%MAXSENDQL].NextDesc_low &=(SND_LIST_END^0xffffffff);
+	Slisthead = SHead = (SHead + 1) % MAXSENDQL;
 
 	
    	TDMA_Stat = read_BAR0(DMA_SND_CTRL);        
@@ -953,7 +945,8 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	//	up(&write_sem);
 	//	return -EAGAIN;
 	}
-		Slisthead = SHead = (SHead + 1) % MAXSENDQL;
+	spin_unlock_irq(&sendLock);
+
 	up(&write_sem);
 	//	printk("pcie56_write len:%d,count:%dline:%d\n",slen,count,__LINE__);
 	//spin_unlock_bh(&sendLock);

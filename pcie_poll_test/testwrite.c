@@ -163,7 +163,7 @@ int main(int argc,char* argv[])
       while(1){
 	    char c;
 	    int nfds;
-            nfds = epoll_wait(epfd, events, 4, 2000);
+            nfds = epoll_wait(epfd, events, 4, 500);
             //printf("testsend nfds %d\n", nfds);
 
             for( int i = 0 ; i < nfds ; i++ ){
