@@ -396,7 +396,7 @@ int Other_Side_Recv(void)
 		ret = RTail-RHead;
 	}
 	
-	return (ret > MAX_PACK_SAFE); 
+	return (ret > MAX_PACK_RECV_SAFE); 
 }
 
 #define MAX_PACK_SEND_SAFE 100
