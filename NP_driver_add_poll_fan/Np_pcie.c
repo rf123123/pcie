@@ -728,6 +728,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	if(!Recv_Flag)
 	{
 		PRINTK("READ data in, but not IRQ!\n");
+#if 0		
 		Recv_count =0;
 		ret = Rlisthead;
 		//PRINTK("<pcie56_interrupt_recv>:recv complete interrupt!\n");
@@ -746,6 +747,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 		//Rlisthead = (Rlisthead + 1)%MAXRECVQL;		
 		RHead = Rlisthead; 
 		Recv_Flag = (Rlisthead != Rlisttail);
+#endif
 		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",ret,RHead,Recv_count,Recv_Flag);
 		up(&read_sem);
 		return -EAGAIN;
@@ -954,7 +956,7 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 	//PRINTK("<pcie56_poll>: SHead is %d  STail  is %d   RHead is  %d   RTail  is  %d  Renhead is  %d   Rentail  is  %d\n",SHead,STail,RHead,RTail,Renhead,Rentail);
 	//if((SHead+1)%MAXSENDQL!=STail)
 
-	if (down_interruptible(&read_sem)==0) 								
+	//if (down_interruptible(&read_sem)==0) 								
 	{
 		//PRINTK("<pcie56_poll>: pollin  select!\n");
 		if( recv_list[Rlisttail].status & DMA_RCV_LIST_FLAG )
@@ -966,10 +968,10 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 			{
 				PRINTK("<pcie56_poll>:can not read! head:%d, tal:%d\n", RHead ,RTail);
 			}
-		up(&read_sem);
+		//up(&read_sem);
 	}
 
-	if (down_interruptible(&write_sem)==0) 									  
+	//if (down_interruptible(&write_sem)==0) 									  
 	{
 		ret = Other_Side_Recv();
 		//PRINTK("<pcie56_poll>:write ret is %d!\n",ret );
@@ -983,7 +985,7 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 			PRINTK("<pcie56_poll>:Other_Side_Recv fail, head:%d, tail:%d!\n",RHead ,RTail );
 		}
 
-		up(&write_sem);
+		//up(&write_sem);
 	}
 
 	//spin_unlock_bh(&lock);
