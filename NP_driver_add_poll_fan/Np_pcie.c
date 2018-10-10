@@ -728,6 +728,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	if(!Recv_Flag)
 	{
 		PRINTK("READ data in, but not IRQ!\n");
+		up(&read_sem);
 		return -EAGAIN;
 	}
 	
