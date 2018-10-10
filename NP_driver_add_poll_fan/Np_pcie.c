@@ -307,8 +307,8 @@ struct send_descriptor{
 	u32 SendFlagtag2;
 	}*send_list;
 
-spinlock_t sendLock = SPIN_LOCK_UNLOCKED;
-spinlock_t recvLock = SPIN_LOCK_UNLOCKED;
+spinlock_t sendLock;
+spinlock_t recvLock;
 //spinlock_t sQLock = SPIN_LOCK_UNLOCKED;
 //spinlock_t rQLock = SPIN_LOCK_UNLOCKED;
 
@@ -1089,6 +1089,9 @@ static int __init pcie56Drv_init(void)
 	init_waitqueue_head(&sendoutq);
 	init_waitqueue_head(&recvinq);
 	spin_lock_init(&lock);
+	spin_lock_init(&sendLock);
+	spin_lock_init(&lock);
+
 	pcie56=pci_get_device(VENDOR_ID , DEVICE_LS_ID ,NULL);
 
 	if (!pcie56) {
