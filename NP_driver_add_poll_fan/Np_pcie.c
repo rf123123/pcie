@@ -550,7 +550,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		//		}
 		
 		
-	//	PRINTK("<pcie56_interrupt_send>:Slisttail is : %d\n",Slisttail);
+		PRINTK("<pcie56_interrupt_send>:Slisttail is : %d\n",STail);
 		//spin_lock_bh(&sendLock);
 		if((SHead != STail)&&(0==(read_BAR0(DMA_SND_CTRL)&DMA_SND_BUSY))){
 			start_dma0();
@@ -584,7 +584,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		//Rlisthead = (Rlisthead + 1)%MAXRECVQL;		
 		RHead = Rlisthead; 
 		Recv_Flag = (Rlisthead != Rlisttail);
-		//PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",IntStat,RHead,Recv_count,Recv_Flag);
+		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",IntStat,RHead,Recv_count,Recv_Flag);
 		wake_up_interruptible(&recvinq);
 	}
 	return IRQ_HANDLED;
@@ -712,7 +712,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	int ret;
 	//int num_count;
 	int datalen,length;
-	//printk(KERN_DEBUG"[pcie56_read]: into the function.\n");
+	printk(KERN_DEBUG"[pcie56_read]: into the function.\n");
 	if (down_interruptible(&read_sem))
 		return -EAGAIN;
 	//printk(KERN_DEBUG"[pcie56_read]2: into the function.\n");
@@ -736,7 +736,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 			write_BAR0(RECV_OWN_HEAD, (Own_head&0xffff));
 		}
 */
-	//PRINTK("recv_list[%d].status is 0x%08x \n",Rlisttail,recv_list[Rlisttail].status);
+	PRINTK("recv_list[%d].status is 0x%08x \n",Rlisttail,recv_list[Rlisttail].status);
 
 	if( !(recv_list[Rlisttail].status&DMA_RCV_LIST_FLAG)){
 		up(&read_sem);
@@ -767,7 +767,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 		Recv_Flag = (Rlisthead != Rlisttail);
 		spin_unlock_irq(&recvLock);
 
-		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",ret,RHead,Recv_count,Recv_Flag);
+		PRINTK("<pcie56_read>:old:%d,new:%d,count:%d,flag:%d!\n",ret,RHead,Recv_count,Recv_Flag);
 		//up(&read_sem);
 		//return -EAGAIN;
 	}
@@ -799,7 +799,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	//PRINTK("******************<pcie56_read> Count  is %d ,    slen is %d \n",*(unsigned int *)(&RcvQ[RTail].Buffer[8]), RcvQ[RTail].len );
 	//PRINTK("<pcie56_read>:len is 0x%08x  the paket is 0x%08x   RTail is  0x%08x\n",RcvQ[RTail].len,*(unsigned int *)(RcvQ[RTail].Buffer+44),RTail);
 	//RcvQ[RTail].len = RcvQ[RTail].len >>16 ;
-	//PRINTK("RcvQ[%d].len is 0x%08x\n",RTail,RcvQ[RTail].len);
+	PRINTK("RcvQ[%d].len is 0x%08x\n",RTail,RcvQ[RTail].len);
 	if(RcvQ[RTail].len>FRAMELEN) 
 	{
 	PRINTK("<pcie56_read>:RcvQ[RTail].len too large %d\n",RcvQ[RTail].len);
@@ -840,7 +840,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	//write_BAR0(RECV_OWN_HEAD, (Own_head&0xffff));
 	//datalen = datalen -32;
 	up(&read_sem);
-	//PRINTK("<======================<PCIe_read> datalen:%d, new RTail:%d,len:%d,flag:%d\n",datalen,RTail,len,Recv_Flag);
+	PRINTK("<======================<PCIe_read> datalen:%d, new RTail:%d,len:%d,flag:%d\n",datalen,RTail,len,Recv_Flag);
 	return datalen;
 }
 /***********************************************************************
@@ -891,7 +891,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	}
 #endif
 	slen=count+8;
-	//printk("count:%x slen:%x\n",count,slen);
+	printk("count:%x slen:%x\n",count,slen);
 
 
 	*(unsigned int *)(&SndQ[SHead].Buffer[0]) = ((0xd6fa<<16)|((buffCount++)&0xffff));
@@ -914,15 +914,15 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		printk("pcie56_write line:%d count:%d\n",__LINE__,count);
 		return -EIO;		
        }
-	//PRINTK("****************<pcie56_write> Count  is %d  datalen is %d  slen is %d \n",Count,count,slen);
 	//pkt_id = *(unsigned int *)(SndQ[0].Buffer+40);
 	//if(pkt_id != Count)
 	//	{
 
 	//	 PRINTK("****************<pcie56_write> Count  is %d    pkt_id  is %d \n",Count,pkt_id);
 	///	}
-	//Count++;
+	Count++;
 	
+	PRINTK("****************<pcie56_write> Count  is %d  datalen is %d  slen is %d  SHead:%d \n",Count,count,slen,SHead);
 //	SetBuffer_BYTE_ChgBELE(SndQ[0].Buffer,8);	
 	SndQ[SHead].len = slen;
 //	Change_BELE((char *)&SndQ[0].len);
@@ -948,7 +948,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	spin_unlock_irq(&sendLock);
 
 	up(&write_sem);
-	//	printk("pcie56_write len:%d,count:%dline:%d\n",slen,count,__LINE__);
+		printk("pcie56_write len:%d,count:%dline:%d\n",slen,count,__LINE__);
 	//spin_unlock_bh(&sendLock);
     	return count;
 	
