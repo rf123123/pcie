@@ -566,7 +566,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		//Rlisthead = (Rlisthead + 1)%MAXRECVQL;		
 		RHead = Rlisthead; 
 		Recv_Flag = (Rlisthead != Rlisttail);
-		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",IntStat,RHead,Recv_count,Recv_Flag);
+		//PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",IntStat,RHead,Recv_count,Recv_Flag);
 		wake_up_interruptible(&recvinq);
 	}
 	return IRQ_HANDLED;
