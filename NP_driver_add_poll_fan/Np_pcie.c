@@ -531,7 +531,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	
 	if(IntStat & DMA_SND_INT){
 	//PRINTK("<pcie56_interrupt_send>:send complete interrupt!\n");
-		while(!(send_list[STail].NextDesc_low&SND_LIST_END)){	
+		while(!(send_list[(STail+MAXSENDQL-1)%MAXSENDQL].NextDesc_low&SND_LIST_END)){	
 			//pkt_ids = *(unsigned int *)(SndQ[STail].Buffer+44);
 			//if(pkt_ids != SCount)
 				{
