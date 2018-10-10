@@ -768,8 +768,8 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 		spin_unlock_irq(&recvLock);
 
 		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",ret,RHead,Recv_count,Recv_Flag);
-		up(&read_sem);
-		return -EAGAIN;
+		//up(&read_sem);
+		//return -EAGAIN;
 	}
 	
 //	SetBuffer_BYTE_ChgBELE(RcvQ[RTail].Buffer,8);
