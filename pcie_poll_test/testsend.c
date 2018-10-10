@@ -225,7 +225,7 @@ int main(int argc,char* argv[])
       while(1){
 	    char c;
 	    int nfds;
-#if 0
+#if 1
 	    printf("enter 's' to start\n");
 	    printf("enter 'n' to exit\n");
 		printf("enter 't' to test\n");
