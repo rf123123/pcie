@@ -200,7 +200,7 @@ int main(int argc,char* argv[])
                               #define MAX_PACKETLEN (4088-32)
                               #define MIN_PACKETLEN 32
                               //int packet_size = (int)((double)random()/RAND_MAX*(MAX_PACKETLEN - MIN_PACKETLEN) + MIN_PACKETLEN);
-                              int packet_size = 4000;
+                              int packet_size = 3000;
 
                               cb->pkt_ID = id;
 			
