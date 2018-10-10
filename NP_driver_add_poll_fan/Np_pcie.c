@@ -382,49 +382,67 @@ void pcie56_int_enable()
 /*******************************************************************
  read the reg of other side driver recv
 ********************************************************************/
-#define MAX_PACK_SAFE 10
+#define MAX_PACK_RECV_SAFE 100
 int Other_Side_Recv(void)
 {
 	int ret;
-		if(RHead >= RTail)
-		{
-			ret = RTail+MAXRECVQL-RHead;
-		}
-		else
-		{
-			ret = RTail-RHead;
-		}
+	
+	if(RHead >= RTail)
+	{
+		ret = RTail+MAXRECVQL-RHead;
+	}
+	else
+	{
+		ret = RTail-RHead;
+	}
 	
 	return (ret > MAX_PACK_SAFE); 
 }
 
+#define MAX_PACK_SEND_SAFE 100
 
+int Other_Side_Send(void)
+{
+	int ret;
+	if(SHead >= STail)
+	{
+		ret = RTail+MAXRECVQL-RHead;
+	}
+	else
+	{
+		ret = RTail-RHead;
+	}
+	
+	return (ret > MAX_PACK_SEND_SAFE); 
+}
 
 //	DMA0 Start
 /***********************************************************************
 		DMA0 
 ************************************************************************/
+#define MAX_READ_BUSY_COUNT  1000
 int start_dma0(void)
 {
 	unsigned long u64addr;
 	UINT ret;
 	UINT  TDMA_Stat = 0;
-	u64addr =(UINT64)(sendlistPh+sizeof(struct send_descriptor)*0);
+	int i=0;
+	u64addr =(UINT64)(sendlistPh+sizeof(struct send_descriptor)*STail);
 	write_BAR0(DMA_SND_ADD32, (unsigned int)u64addr);	
 	write_BAR0(DMA_SND_ADD64, (unsigned int)(u64addr>>32));
 	ret = DMA_SND_START|DMA_SND_SG;
 	write_BAR0(DMA_SND_CTRL,ret );
-	//STail=(STail+1)%MAXSENDQL;	
-	//Slisttail = STail;
+
 
 	TDMA_Stat = read_BAR0(DMA_SND_CTRL);        
 	TDMA_Stat= TDMA_Stat&DMA_SND_BUSY;
 	
-	while(TDMA_Stat == 0)
+	while((((read_BAR0(DMA_SND_CTRL))&DMA_SND_BUSY) == 0) && ((i++)<MAX_READ_BUSY_COUNT))
 	{ 	
-		TDMA_Stat= (read_BAR0(DMA_SND_CTRL))&DMA_SND_BUSY;
+		
 	}
-	
+	STail=(STail+1)%MAXSENDQL;	
+	Slisttail = STail;
 	return SUCCESS;
 }
 //	DMA1 Start
@@ -513,17 +531,17 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	
 	if(IntStat & DMA_SND_INT){
 	//PRINTK("<pcie56_interrupt_send>:send complete interrupt!\n");
-/*		while(!(send_list[STail].NextDesc_low&SND_LIST_END)){	
-			pkt_ids = *(unsigned int *)(SndQ[STail].Buffer+44);
-			if(pkt_ids != SCount)
+		while(!(send_list[STail].NextDesc_low&SND_LIST_END)){	
+			//pkt_ids = *(unsigned int *)(SndQ[STail].Buffer+44);
+			//if(pkt_ids != SCount)
 				{
-				 PRINTK("****************<INT   write> SCount  is %d    pkt_id  is %d SHead is %d \n",SCount,pkt_ids,STail);
+			//	 PRINTK("****************<INT   write> SCount  is %d    pkt_id  is %d SHead is %d \n",SCount,pkt_ids,STail);
 				}
-			SCount++;
+			//SCount++;
 	
 			STail=(STail+1)%MAXSENDQL;	
 		}
-*/		
+		
 	//	SCount++;
 	//	pkt_ids = *(unsigned int *)(SndQ[0].Buffer+44);
 		//	if(pkt_ids != SCount)
@@ -534,13 +552,13 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		
 	//	PRINTK("<pcie56_interrupt_send>:Slisttail is : %d\n",Slisttail);
 		//spin_lock_bh(&sendLock);
-		//if((Slisthead != Slisttail)&&(0==(read_BAR0(DMA_SND_CTRL)&DMA_SND_BUSY))){
-		//	start_dma0();
-	//	}
-	//	else
-	//	{
-	//		Dma_ready = 1;
-	//	}
+		if((SHead != STail)&&(0==(read_BAR0(DMA_SND_CTRL)&DMA_SND_BUSY))){
+			start_dma0();
+		}
+		else
+		{
+			Dma_ready = 1;
+		}
 		//spin_unlock_bh(&sendLock);
 		wake_up_interruptible(&sendoutq);
 		
@@ -855,7 +873,16 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		PRINTK("<pcie56_write>:Other_Side_Recv fail, head:%d, tail:%d!",RHead ,RTail );
 		return -EAGAIN;
 	}
+
+	ret = Other_Side_Send();
+	if(ret <= 0)
+	{
+		up(&write_sem);
+		PRINTK("<pcie56_write>:Other_Side_Send fail, head:%d, tail:%d!",SHead ,STail );
+		return -EAGAIN;
+	}
 #endif
+#if 0
 	TDMA_Stat = read_BAR0(DMA_SND_CTRL);        
 	//printk("read DMA_SND_CTRL:0x%x,data:0x%x\n",DMA_SND_CTRL,TDMA_Stat);
 	TDMA_Stat= TDMA_Stat&DMA_SND_BUSY;
@@ -868,13 +895,13 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		return -EAGAIN;
 	
 	}
-	
+#endif
 	slen=count+8;
 	//printk("count:%x slen:%x\n",count,slen);
 #if 1
-	*(unsigned int *)(&SndQ[0].Buffer[0]) = ((0xd6fa<<16)|((buffCount++)&0xffff));
+	*(unsigned int *)(&SndQ[SHead].Buffer[0]) = ((0xd6fa<<16)|((buffCount++)&0xffff));
 	//*(unsigned int *)(&SndQ[0].Buffer[4]) = (slen<<16)+slen;
-	*(unsigned int *)(&SndQ[0].Buffer[4]) = slen&0xffff;
+	*(unsigned int *)(&SndQ[SHead].Buffer[4]) = slen&0xffff;
 #else
 	*(unsigned int *)(&SndQ[0].Buffer[0]) = (((slen&0xffff)<<16)|((slen&0xffff)));
 	//*(unsigned int *)(&SndQ[0].Buffer[4]) = (slen<<16)+slen;
@@ -889,11 +916,11 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		return -EIO;
 	}
 	//	printk("pcie56_write line:%d count:%d\n",__LINE__,count);
-	 ret = __copy_from_user(&SndQ[0].Buffer[8], buf, count);
+	 ret = __copy_from_user(&SndQ[SHead].Buffer[8], buf, count);
 	 if(ret)
     	 {	up(&write_sem);
 		PRINTK("<pcie56_write>:copy from user error!\n");
-		memset(SndQ[0].Buffer, 0, FRAMELEN);
+		memset(SndQ[SHead].Buffer, 0, FRAMELEN);
 		printk("pcie56_write line:%d count:%d\n",__LINE__,count);
 		return -EIO;		
        }
@@ -907,27 +934,26 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	//Count++;
 	
 //	SetBuffer_BYTE_ChgBELE(SndQ[0].Buffer,8);	
-	SndQ[0].len = slen;
+	SndQ[SHead].len = slen;
 //	Change_BELE((char *)&SndQ[0].len);	
-	send_list[0].length = SndQ[0].len;
-	send_list[0].NextDesc_low |=SND_LIST_END ;
-	//Slisthead = SHead = (SHead + 1) % MAXSENDQL;
+	send_list[SHead].length = SndQ[SHead].len;
+	send_list[SHead].NextDesc_low |=SND_LIST_END ;
+	send_list[(SHead+MAXSENDQL-1)%MAXSENDQL].NextDesc_low &=(SND_LIST_END^0xffffffff);
+
 	
-   	//TDMA_Stat = read_BAR0(DMA_SND_CTRL);        
-	//TDMA_Stat= TDMA_Stat&DMA_SND_BUSY;
+   	TDMA_Stat = read_BAR0(DMA_SND_CTRL);        
+	TDMA_Stat= TDMA_Stat&DMA_SND_BUSY;
 	//spin_lock_bh(&sendLock);
-//	if(TDMA_Stat==0)
-//	{
-		
+	if(TDMA_Stat==0)
+	{
 		start_dma0();
-	
-//	}
-	//else
-	//{
+	}
+	else
+	{
 	//	up(&write_sem);
-//		return -EAGAIN;
-		
-//	}
+	//	return -EAGAIN;
+	}
+		Slisthead = SHead = (SHead + 1) % MAXSENDQL;
 	up(&write_sem);
 	//	printk("pcie56_write len:%d,count:%dline:%d\n",slen,count,__LINE__);
 	//spin_unlock_bh(&sendLock);
@@ -942,7 +968,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 {
 	unsigned int mask = 0;
-	int ret;
+	int ret,ret2;
 	/*
 	 * The buffer is circular; it is considered full
 	 * if "wp" is right behind "rp" and empty if the
@@ -974,15 +1000,17 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 	//if (down_interruptible(&write_sem)==0) 									  
 	{
 		ret = Other_Side_Recv();
+		ret2 = Other_Side_Send();
+
 		//PRINTK("<pcie56_poll>:write ret is %d!\n",ret );
-		if(ret>0)
+		if((ret>0) && (ret2>0))
 		{
 			mask |=  POLLOUT|POLLWRNORM;
 			//PRINTK("<pcie56_poll>:can write!\n" );
 		}
 		else
 		{
-			PRINTK("<pcie56_poll>:Other_Side_Recv fail, head:%d, tail:%d!\n",RHead ,RTail );
+			PRINTK("<pcie56_poll>:Other_Side_Recv status: head:%d, tail:%d; Other_Side_Send status: head:%d, tail:%d!\n",RHead,RTail,SHead,STail);
 		}
 
 		//up(&write_sem);
