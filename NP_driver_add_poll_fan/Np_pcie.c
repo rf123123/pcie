@@ -728,6 +728,25 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	if(!Recv_Flag)
 	{
 		PRINTK("READ data in, but not IRQ!\n");
+		Recv_count =0;
+		ret = Rlisthead;
+		//PRINTK("<pcie56_interrupt_recv>:recv complete interrupt!\n");
+		while(recv_list[Rlisthead].status&DMA_RCV_LIST_FLAG){
+			//pkt_id =  *(unsigned int *)(RcvQ[Rlisthead].Buffer+40);
+		//	if(Recv_Flag != pkt_id)
+		//	{
+			//PRINTK("<*****INT*****> RHead is %d Recv_count is %d \n",Rlisthead,Recv_Flag);
+		//	}
+			//tasklet_schedule(&int_tasklet_recv);
+			Rlisthead = (Rlisthead + 1)%MAXRECVQL;
+			//Recv_Flag = (Rlisthead < Rlisttail);
+			Recv_count ++;
+		}
+		//Rlisthead = (Rlisthead +MAXRECVQL- 1)%MAXRECVQL;
+		//Rlisthead = (Rlisthead + 1)%MAXRECVQL;		
+		RHead = Rlisthead; 
+		Recv_Flag = (Rlisthead != Rlisttail);
+		PRINTK("<pcie56_interrupt_recv>:old:%d,new:%d,count:%d,flag:%d!\n",ret,RHead,Recv_count,Recv_Flag);
 		up(&read_sem);
 		return -EAGAIN;
 	}
@@ -985,7 +1004,7 @@ int pcie56_open(struct inode *inode, struct file *filp)
 	filp->f_op = &pcie56Drv_fops;
 	pcie56_opens++;
 	Read_FLag = 0;
-	Recv_Flag = 0;
+	//Recv_Flag = 0;
 	Count = 0;
 	SCount = 0;
 //	enable interrupt
