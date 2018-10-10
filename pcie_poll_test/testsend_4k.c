@@ -206,7 +206,7 @@ int main(int argc,char* argv[])
 		devs[i].sendnum = 0;
 		devs[i].status = ST_WAIT;
 	      	ev.data.fd = devs[i].fd;
-	     	ev.events = EPOLLOUT;
+	     	ev.events = EPOLLOUT | EPOLLIN;
 	      epoll_ctl(epfd, EPOLL_CTL_ADD, devs[i].fd, &ev);
 	}
      // int state = ST_WAIT;
@@ -308,7 +308,7 @@ int main(int argc,char* argv[])
                         int count = rand()%12;
 			count = 1;
                         //printf("count = %d, events %0#x  fd is %d  devs[%d].status=%d \n",count, events[i].events,events[i].data.fd,id,devs[id].status);
-#if 0
+#if  0	
                         if( devs[id].status == ST_WAIT ){
                               printf("pcie EPOLLOUT\n");
                              devs[id].status = ST_ESTAB;
@@ -326,7 +326,7 @@ int main(int argc,char* argv[])
                               #define MAX_PACKETLEN (4088-32)
                               #define MIN_PACKETLEN 32
                               //int packet_size = (int)((double)random()/RAND_MAX*(MAX_PACKETLEN - MIN_PACKETLEN) + MIN_PACKETLEN);
-                              int packet_size = 4000;
+                              int packet_size = 2000;
 
                               cb->pkt_ID = id;
 			
@@ -377,7 +377,7 @@ int main(int argc,char* argv[])
 			      
                         }
                   }
-#if 0
+#if 1
                   if(events[i].events & EPOLLIN){
                         int count = rand()%12;
 			printf("read count:%d\n",count);
