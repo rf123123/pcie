@@ -807,7 +807,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	//write_BAR0(RECV_OWN_HEAD, (Own_head&0xffff));
 	//datalen = datalen -32;
 	up(&read_sem);
-	PRINTK("<======================<PCIe_read> datalen:%d, new RTail:%d,len:%d,flag:%d\n",datalen,RTail,len,Recv_Flag);
+	//PRINTK("<======================<PCIe_read> datalen:%d, new RTail:%d,len:%d,flag:%d\n",datalen,RTail,len,Recv_Flag);
 	return datalen;
 }
 /***********************************************************************
@@ -941,7 +941,7 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 		if( recv_list[Rlisttail].status & DMA_RCV_LIST_FLAG )
 			{
 				mask |= POLLIN|POLLRDNORM;
-				PRINTK("<pcie56_poll>:can read!\n" );
+				//PRINTK("<pcie56_poll>:can read!\n" );
 			}
 			else
 			{
@@ -957,7 +957,7 @@ unsigned int pcie56_poll(struct file *filp, poll_table *wait)
 		if(ret>0)
 		{
 			mask |=  POLLOUT|POLLWRNORM;
-			PRINTK("<pcie56_poll>:can write!\n" );
+			//PRINTK("<pcie56_poll>:can write!\n" );
 		}
 		else
 		{
