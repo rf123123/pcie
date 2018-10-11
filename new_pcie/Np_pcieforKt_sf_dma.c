@@ -856,6 +856,14 @@ void send_thread(void)
 	i = 0;
 	UINT 		Last_send = 0;
 	//UINT 		SFLast_send = 0;
+
+	DECLARE_WAITQUEUE(wait1, current);
+	spin_lock_irq(&current->sighand->siglock);
+	siginitsetinv(&current->blocked , sigmask(SIGKILL) | sigmask(SIGSTOP));
+	recalc_sigpending();
+	spin_unlock_irq(&current->sighand->siglock);
+
+	
 	while(1){
 		//PRINTK("send_thread loop \n");
 		if( kthread_should_stop()) 
@@ -930,6 +938,12 @@ void send_thread(void)
 		}
 			//end if(DMA is not working)
 
+		add_wait_queue(&sendinq,&wait1);
+		__set_current_state(TASK_INTERRUPTIBLE);
+		schedule_timeout(20);
+		__set_current_state(TASK_RUNNING);
+		remove_wait_queue(&sendinq,&wait1);
+
 	}
 	//end while 1 
 }
@@ -941,6 +955,12 @@ void recv_thread(void)
 	int id,recvlen,recvlisttail;
 	unsigned char* recvbuff;
 	int recv_flag = 0;
+	
+	DECLARE_WAITQUEUE(wait1, current);
+	spin_lock_irq(&current->sighand->siglock);
+	siginitsetinv(&current->blocked , sigmask(SIGKILL) | sigmask(SIGSTOP));
+	recalc_sigpending();
+	spin_unlock_irq(&current->sighand->siglock);
 
 	while(1){
 		if( kthread_should_stop()) 
@@ -1026,6 +1046,11 @@ void recv_thread(void)
 		else{
 
 		}
+	add_wait_queue(&recvoutq,&wait1);
+	__set_current_state(TASK_INTERRUPTIBLE);
+	schedule_timeout(20);
+	__set_current_state(TASK_RUNNING);
+	remove_wait_queue(&recvoutq,&wait1);		
 	}
 }
 
@@ -1056,7 +1081,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	}
 	if((IntStat & DMA_SND_INT) || (IntStat & DMA_SFSND_INT)){
 //	PRINTK("<pcie56_interrupt_send>:send complete interrupt!\n");
-		//wake_up_interruptible(&sendinq);
+		wake_up_interruptible(&sendinq);
 	}
 	if(IntStat & DMA_RCV_INT){ 
 //		PRINTK("<pcie56_interrupt_recv>:recv complete interrupt!\n");
@@ -1065,7 +1090,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			Rlisthead = (Rlisthead + 1)&MAX_NUM;
 		}
 		RHead = Rlisthead; 
-		//wake_up_interruptible(&recvoutq);
+		wake_up_interruptible(&recvoutq);
 		//spin_unlock_bh(&recvlock);
 	}
 	if(IntStat & DMA_SFRCV_INT){
@@ -1294,7 +1319,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 //	PRINTK("%s: id is %d  RTAil is %d  ret is %d\n", __func__,dev->DeviceID,dev->RTail, ret);
 	spin_lock_bh(&dev->readlock);
 	dev->RTail = (dev->RTail+1)&MAX_NUM;//%MAXRECVQL;
-//	wake_up_interruptible(&recvoutq);			//wake the recv kernel_thread to recv data
+	wake_up_interruptible(&recvoutq);			//wake the recv kernel_thread to recv data
 	spin_unlock_bh(&dev->readlock);
 	
 	//LeaveFunction();
@@ -1529,7 +1554,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	dev->devicesend[dev->Slisthead].NextDesc_low &=  SND_LIST_RESET;				//just let one-packet style
 	dev->Slisthead = dev->SHead = (dev->SHead + 1) & MAX_NUM;					//% MAXSENDQL;
 //	PRINTK("<pcie56_write>:dev->SHead  is %d   \n",dev->SHead);
-//	wake_up_interruptible(&sendinq);	//wake up send kernel-thread to send the data
+	wake_up_interruptible(&sendinq);	//wake up send kernel-thread to send the data
 	spin_unlock_bh(&dev->writelock);
 	//LeaveFunction();
     	return count;
