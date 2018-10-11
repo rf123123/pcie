@@ -202,7 +202,7 @@ MODULE_LICENSE("GPL");
 #define ERR_IRQ_NONE				-13			
 
 #define UINT8	unsigned char 
-#define UINT		unsigned int
+#define UINT	unsigned int
 #define UINT64	unsigned long
 
 struct FpgaPacket
@@ -352,6 +352,7 @@ void SetBuffer_BYTE_ChgBELE(const unsigned char *p_data, unsigned int len)
 #endif
 }
 
+#if 0
 void write_prm(void)
 {
 
@@ -572,7 +573,7 @@ wait_for_done(void)
 		write_BAR0(FPGA_CFG_DATA, 0x80000000);
 
 }
-
+#endif
 
 //recv  descriptor list for S/G DMA
 
@@ -952,9 +953,9 @@ void send_thread(void)
 **********************************************************************/
 void recv_thread(void)
 {
-	int id,recvlen,recvlisttail;
+	int id,recvlen;//,recvlisttail;
 	unsigned char* recvbuff;
-	int recv_flag = 0;
+	//int recv_flag = 0;
 	
 	DECLARE_WAITQUEUE(wait1, current);
 	spin_lock_irq(&current->sighand->siglock);
@@ -1130,13 +1131,13 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	case ECC_TRXSET0:
 		//*(unsigned int *)arg = read_BAR0(FPGA_SOFT_VERISON);
 		write_BAR0(ECC_TX_RX_SET0, (unsigned int) arg);
-		PRINTK("<ioctl> ECC_reg0  is 0x%08x \n",arg);
+		PRINTK("<ioctl> ECC_reg0  is 0x%08x \n",(unsigned int)arg);
 		ret= SUCCESS;
 		break;
 	case ECC_TRXSET1:
 		//*(unsigned int *)arg = read_BAR0(FPGA_SOFT_VERISON);
 		write_BAR0(ECC_TX_RX_SET1, (unsigned int) arg);
-		PRINTK("<ioctl> ECC_reg1  is 0x%08x \n",arg);
+		PRINTK("<ioctl> ECC_reg1  is 0x%08x \n",(unsigned int)arg);
 		ret= SUCCESS;
 		break;
 	case FPGA_RESET:
@@ -1150,6 +1151,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		ret = SUCCESS;
 		break;
 	case FPGA_CONFIG:
+#if 0
 			if((read_BAR0(FPGA_CFG_STATUS)&0xff)!=0xff)
 			{
 				PRINTK("<pcie56_ioctl>FPGA is not INIT,0x%08x\n",read_BAR0(FPGA_CFG_STATUS));
@@ -1252,6 +1254,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				}
 			
 			break;
+#endif
 	case CHANEL_CONFIG:
 			ret = *(unsigned int *)(arg);
 			if(ret==0){
@@ -1330,8 +1333,8 @@ int data_read( char  *buf, int  count, int chanel)
 	int len;					
 	int ret;
 	char* buff;
-	do_gettimeofday(&start_read);
 	struct pcie56_dev *dev = pcie56_devs+chanel;
+	do_gettimeofday(&start_read);
 	if((count==0)||(buf==NULL)){
 		return 0;
 	}
@@ -1345,7 +1348,7 @@ int data_read( char  *buf, int  count, int chanel)
 	buff = dev->devicerecvq[dev->RTail].Buffer;
 	spin_unlock_bh(&dev->readlock);
 	//SetBuffer_BYTE_ChgBELE(buff,32);	
-	ret=memcpy(buf,buff,len);
+	ret=(int)memcpy(buf,buff,len);
 	if(ret<0)
 		return -EIO;
 	spin_lock_bh(&dev->readlock);
@@ -1362,10 +1365,10 @@ int data_write(char  * buf,int  count,int chanel)
 	u32 slen;
 	char* buffer;
 	//EnterFunction();
+	struct pcie56_dev *dev = pcie56_devs+chanel;	
 	do_gettimeofday(&start_write);
-	struct pcie56_dev *dev = pcie56_devs+chanel;
 	if ((GLOBALMEM_SIZE-32) < count){
-		PRINTK("%s:write packet is too long,len = %ld\n", __func__, count);
+		PRINTK("%s:write packet is too long,len = %d\n", __func__, count);
 		return -EINVAL;
 	}
 	if((count==0)||(buf==NULL))
@@ -1868,7 +1871,7 @@ static int __init pcie56Drv_init(void)
 //		pcie56_devs[count].Rlisttail = 0;
 		init_waitqueue_head(&(pcie56_devs[count].sendoutq));
 		init_waitqueue_head(&(pcie56_devs[count].recvinq));
-		SetBuffer_BYTE_ChgBELE(pcie56_devs[count].devicesend, sizeof(struct send_descriptor)*MAXSENDQL);
+		SetBuffer_BYTE_ChgBELE((const unsigned char *)pcie56_devs[count].devicesend, sizeof(struct send_descriptor)*MAXSENDQL);
 		
 	}
 	PRINTK("\n\n <pcie56_init>    alloc   RECV memery!\n\n");
@@ -1880,7 +1883,7 @@ static int __init pcie56Drv_init(void)
 	}
 	memset(Recv_buffer,0,DMA_FIFO_SIZE*MAXRECVQL);
 	RcvQ[0].BufferPh = dma_map_single(&pcie56->dev,Recv_buffer,FRAMELEN*MAXRECVQL,DMA_FROM_DEVICE);
-	PRINTK("<pcie56Drv_init>: RECV Dma Buffer is Create %x\n,RcvQ[0].BufferPh is %0x \n",(int)Recv_buffer,RcvQ[0].BufferPh);
+	PRINTK("<pcie56Drv_init>: RECV Dma Buffer is Create %x\n,RcvQ[0].BufferPh is %0x \n",(int)Recv_buffer,(int)RcvQ[0].BufferPh);
 	for (i=0;i<MAXRECVQL;i++){ 
 	  	RcvQ[i].Buffer = Recv_buffer+i*FRAMELEN;
 		RcvQ[i].BufferPh = RcvQ[0].BufferPh+i*FRAMELEN;
@@ -1920,7 +1923,7 @@ static int __init pcie56Drv_init(void)
 	Recv_buffer= (void *)dma_mem_alloc(DMA_FIFO_SIZE*MAXRECVQL);
 	memset(Recv_buffer,0,DMA_FIFO_SIZE*MAXRECVQL);
 	RsfQ[0].BufferPh = dma_map_single(&pcie56->dev,Recv_buffer,FRAMELEN*MAXRECVQL,DMA_FROM_DEVICE);
-	PRINTK("<pcie56Drv_init>: RECV Dma Buffer is Create %x\n,RcvQ[0].BufferPh is %0x \n",(int)Recv_buffer,RsfQ[0].BufferPh);
+	PRINTK("<pcie56Drv_init>: RECV Dma Buffer is Create %x\n,RcvQ[0].BufferPh is %0x \n",(int)Recv_buffer,(int)RsfQ[0].BufferPh);
 //	PRINTK("<pcie56Drv_init>: RsfQ[0].BufferPh is Create 0x%08x\n",(int)RsfQ[0].BufferPh);
 	if(!Recv_buffer){
 		PRINTK(KERN_ERR "<pcie56Drv_init>: Malloc SF Recv buffer ERROR!\n" );
