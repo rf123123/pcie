@@ -282,6 +282,7 @@ struct class *pcie56_device;
 struct pci_dev *pcie56=NULL;        //pci device struct
 struct device		*ps56_dev; 
 struct cdev pcie56_cdev;       		 //pci device struct
+struct class *pcie56_class;
 int pcie56_major = DEVICE_MAJOR;
 static int pcie56_opens = 0;
 dma_addr_t sflistPh,recvlistPh;
@@ -1694,6 +1695,8 @@ int pcie56Drv_setup_cdev(struct pcie56_dev *dev, int index)
 	/* Fail gracefully if need be */
 	if (err)
 		PRINTK("Error %d adding pcie56Drv%d\n", err, index);
+	pcie56_class = class_create(THIS_MODULE,"pcie56_udev");
+	device_create(pcie56_class,NULL,devno,NULL,"pcie56");
 	return err;
 }
 
@@ -2111,7 +2114,11 @@ fail_alloc_devsendbuffer:
 	}
 setup_cdev_err:
 	for(;devcount>0;devcount--)
-	 cdev_del(&pcie56_devs[devcount-1].cdev);
+	{
+		device_destroy(pcie56_class, pcie56_cdev.dev);
+		class_destroy(pcie56_class);
+		cdev_del(&pcie56_devs[devcount-1].cdev);
+	}
 	unregister_chrdev_region(dev,DEVICE_COUNT);
 deregister_chrdev_region:
 	  iounmap(pcie56_BAR0_Addr);
@@ -2154,7 +2161,12 @@ static void __exit pcie56Drv_cleanup(void)
 		 	dma_mem_free(pcie56_devs[i].devicerecvq[0].Buffer, FRAMELEN*MAXSENDQL);
 		}
 	for(devcount = DEVICE_COUNT;devcount>0;devcount--)
-		 cdev_del(&pcie56_devs[devcount-1].cdev);
+	{
+		device_destroy(pcie56_class, pcie56_cdev.dev);
+		class_destroy(pcie56_class);
+		cdev_del(&pcie56_devs[devcount-1].cdev);
+	}
+		 //cdev_del(&pcie56_devs[devcount-1].cdev);
 	/*È¡ÏûÖĞ¶Ï*/
 #if	PCIE_INT
 	pcie56_int_disable();
