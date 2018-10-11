@@ -1115,14 +1115,15 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 //int pcie56_ioctl(struct inode *in, struct file *filp, unsigned int cmd ,unsigned long arg)
 //#endif
 {
-	PRINTK("<pcie56_ioctld>:into  ioctl   !\n");
-	int i;
+	//int i;
 	int j = 0;
 	int ret;
-	int nolen;
-	unsigned int fpga_data;
-	unsigned char fpga_p[4096];
-	struct FpgaPacket *fpga; 
+	//int nolen;
+	//unsigned int fpga_data;
+	//unsigned char fpga_p[4096];
+	//struct FpgaPacket *fpga; 
+	PRINTK("<pcie56_ioctld>:into  ioctl   !\n");
+
 	switch(cmd){
 	case READ_VERSION:
 		*(unsigned int *)arg = read_BAR0(FPGA_SOFT_VERISON);
