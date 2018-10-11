@@ -669,7 +669,8 @@ void pcie56_int_enable()
 	unsigned int reg;
 //		PRINTK("======><pcie56_int_enable> \n");
 	reg = read_BAR0(DMA_INT_EN);
-	reg = DMA_INT_ENALL | DMA_SND_EN | DMA_RCV_EN | DMA_SFSND_EN|DMA_SFRCV_EN;
+	//reg = DMA_INT_ENALL | DMA_SND_EN | DMA_RCV_EN | DMA_SFSND_EN|DMA_SFRCV_EN;
+	reg = DMA_INT_ENALL | DMA_SND_EN | DMA_RCV_EN;
 	write_BAR0(DMA_INT_EN, reg);
 //		PRINTK("<======<pcie56_int_enable> \n");
 }  
@@ -679,6 +680,7 @@ void pcie56_int_enable()
 ********************************************************************/
 int Other_Side_Recv(void)
 {
+#if 0
 	int other_head,head_flag;
 	int other_tail,tail_flag;
 	int ret;
@@ -707,11 +709,15 @@ int Other_Side_Recv(void)
 		ret = ret -(SENDMAX*2);
 
 //	ret =128;
-	return ret; 
+	return ret;
+#else
+	return 128;
+#endif
 }
 
 int Local_Side_Recv(void)
 {
+#if 0
 	int local_head,local_tail;
 	int head_flag,tail_flag;
 	int ret,flag;
@@ -740,6 +746,9 @@ int Local_Side_Recv(void)
 		ret = ret -(SENDMAX*2);
 //	ret =128;
 	return ret; 
+#else
+	return 128;
+#endif
 }
 
 UINT Sendnum(UINT id,UINT head,UINT tail,UINT max)
@@ -845,12 +854,13 @@ void send_thread(void)
 	int idx = 0;
 
 	i = 0;
-	UINT 		Last_send = 2;
-	UINT 		SFLast_send = 0;
+	UINT 		Last_send = 0;
+	//UINT 		SFLast_send = 0;
 	while(1){
 		//PRINTK("send_thread loop \n");
 		if( kthread_should_stop()) 
 			break;
+#if 0		
 		if((read_BAR0(DMA_SFSND_CTRL)&DMA_STATUS_BUSY)==0){     //SF SEND DMA is not working
 			
 			for( i = SFLast_send+1; i <( SFLast_send + 3); i++ ){
@@ -883,10 +893,10 @@ void send_thread(void)
 			}
 			SFLast_send = idx;
 		}
-
+#endif
 		if((read_BAR0(DMA_SND_CTRL)&DMA_STATUS_BUSY)==0){     //SEND DMA is not working
 
-			for( i = Last_send+1; i < Last_send + DEVICE_COUNT; i++ ){
+			for( i = Last_send; i < Last_send + DEVICE_COUNT; i++ ){
 
 				idx = i % DEVICE_COUNT;
 				if(idx > 2){
@@ -936,6 +946,7 @@ void recv_thread(void)
 		if( kthread_should_stop()) 
 			break;
 		smp_mb();
+#if 0		
 		if((sf_list[SFTail].status&DMA_RCV_LIST_FLAG)!=0){
 			do_gettimeofday(&start_recvDMA);
 			id = *(unsigned int *)(&RsfQ[SFTail].Buffer[12]) ;
@@ -975,10 +986,12 @@ void recv_thread(void)
 		else{
 		
 		}
+#endif
 		if((recv_list[Rlisttail].status&DMA_RCV_LIST_FLAG)!=0){
 		//	PRINTK("recv_thread habe data \n");
-			id = *(unsigned int *)(&RcvQ[Rlisttail].Buffer[12]) ;
-			recvlen= 	recv_list[Rlisttail].status;
+			//id = *(unsigned int *)(&RcvQ[Rlisttail].Buffer[12]) ;
+			id = 0;
+			recvlen= recv_list[Rlisttail].status;
 			Change_BELE((unsigned char *)&recvlen);
 			Change_BELE((unsigned char *)&id);
 			id &= 0xff; 
@@ -993,13 +1006,13 @@ void recv_thread(void)
 				Rlisttail = RTail = Rlisttail+1;
 				if(Rlisttail>MAX_NUM){	
 					Rlisttail &= MAX_NUM;
-					Own_head = (Own_head&0x8000)+Rlisttail +0x8000;
+					//Own_head = (Own_head&0x8000)+Rlisttail +0x8000;
 						
 				}else{
-					Own_head = (Own_head&0x8000)+Rlisttail;
+					//Own_head = (Own_head&0x8000)+Rlisttail;
 				}
 			
-				write_BAR0(RECV_OWN_HEAD, (Own_head&0xffff));
+				//write_BAR0(RECV_OWN_HEAD, (Own_head&0xffff));
 				pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].len = recvlen;
 				pcie56_devs[id].RHead= (pcie56_devs[id].RHead + 1)&MAX_NUM;//%MAXRECVQL;
 				
@@ -1260,17 +1273,19 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 */
 	spin_unlock_bh(&dev->readlock);
 #if 1
+#if 0
 	if(dev->DeviceID <5){					// sf data ,they have 32byte header
 
 		SetBuffer_BYTE_ChgBELE(buff,32);	
 		ret = __copy_to_user(buf,buff,len); 
 		if(ret<0)
 			return -EIO;	
-	}else{								//other data  ,they don't have header
-
-		len = len-32;
+	}else
+#endif
+	{//other data  ,they don't have header
+		len = len-8;
 		//PRINTK("%s:len is %d\n", __func__, len);
-		ret = __copy_to_user(buf,buff+32,len); 
+		ret = __copy_to_user(buf,buff+8,len); 
 		
 		if(ret<0)
 			return -EIO;	
@@ -1373,6 +1388,8 @@ int data_write(char  * buf,int  count,int chanel)
 /**********************************************************************
 
 ************************************************************************/
+	u32 buffCount=0;
+
 ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,loff_t * f_pos)
 {	
  	int  ret = 0;
@@ -1380,7 +1397,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	char* buffer;
 	//EnterFunction();
 	struct pcie56_dev *dev = filp->private_data;
-	if ((GLOBALMEM_SIZE-32) < count){
+	if ((GLOBALMEM_SIZE-8) < count){
 		PRINTK("%s:write packet is too long,len = %ld\n", __func__, count);
 		return -EINVAL;
 	}
@@ -1418,6 +1435,8 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		 SetBuffer_BYTE_ChgBELE(buffer,32);
 	//	  PRINTK("<pcie56_write>:Write to sf FPGA ! id  is %d   \n",dev->DeviceID);
 #else
+
+#if 0
 		if(dev->DeviceID<5){
 			ret = __copy_from_user(buffer, buf, count);
 			 if(ret)
@@ -1450,19 +1469,22 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	//		 	PRINTK(" 0x%x ",buffer[i]);
 			SetBuffer_BYTE_ChgBELE(buffer,32);
 			slen = count;
-		}else{
+		}else
+#endif
+		{
 
-		slen = count+32;
+		slen = count+8;
 		
-		*(unsigned int *)(&buffer[0]) = (0x0810<<16)+((DstID)<<8)+(LocalID);	
-		*(unsigned int *)(&buffer[4]) = (slen<<16)+slen;
-		*(unsigned int *)(&buffer[8]) = (0<<16)+(0<<8);
+		*(unsigned int *)(&buffer[0]) = ((0xd6fa<<16)|((buffCount++)&0xffff));	
+		*(unsigned int *)(&buffer[4]) = slen&0xffff;
+		//*(unsigned int *)(&buffer[8]) = (0<<16)+(0<<8);
+
 		// PRINTK("<pcie_write >  before copy from user\n");
-		 ret = __copy_from_user(buffer+32, buf, count);
+		 ret = __copy_from_user(buffer+8, buf, count);
 		 if(ret)
 	    		return -EIO;	
-		 *(unsigned int *)(&buffer[12]) &= 0xffffff00;
-		 *(unsigned int *)(&buffer[12])  =  dev->DeviceID&0xff;					//it mask which device has recevied	 this data	
+//		 *(unsigned int *)(&buffer[12]) &= 0xffffff00;
+//		 *(unsigned int *)(&buffer[12])  =  dev->DeviceID&0xff;					//it mask which device has recevied	 this data	
 		// Send_count ++;
 		 //PRINTK("<pcie_write >   write the data own ID is %d\n",*(unsigned int *)(&buffer[12]));
 	//	  PRINTK(" write  data is :\n");
