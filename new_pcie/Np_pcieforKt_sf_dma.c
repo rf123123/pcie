@@ -918,7 +918,7 @@ void send_thread(void)
 					if(sendcount > 0){
 				
 						pcie56_devs[idx].devicesend[(pcie56_devs[idx].STail+sendcount -1)&MAX_NUM].NextDesc_low |= SND_LIST_END;	
-						//	PRINTK("before sf dma send \n");
+							PRINTK("before sf dma send \n");
 						start_dma0(idx,pcie56_devs[idx].STail);
 						 //updata the sendlist header	
 						pcie56_devs[idx].Slisttail = pcie56_devs[idx].STail = (pcie56_devs[idx].STail+sendcount)&MAX_NUM;
@@ -1081,29 +1081,32 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	if((IntStat & DMA_INT_ALL) == 0){
 		return ERR_IRQ_NONE;
 	}
-	if((IntStat & DMA_SND_INT) || (IntStat & DMA_SFSND_INT)){
-//	PRINTK("<pcie56_interrupt_send>:send complete interrupt!\n");
+	if((IntStat & DMA_SND_INT))// || (IntStat & DMA_SFSND_INT)){
+	PRINTK("<pcie56_interrupt_send>:send complete interrupt!\n");
 		wake_up_interruptible(&sendinq);
 	}
 	if(IntStat & DMA_RCV_INT){ 
-//		PRINTK("<pcie56_interrupt_recv>:recv complete interrupt!\n");
+		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt SFHead:%d!\n",SFHead);
 		//spin_lock_bh(&recvlock);
 		while(recv_list[Rlisthead].status&DMA_RCV_LIST_FLAG){
 			Rlisthead = (Rlisthead + 1)&MAX_NUM;
 		}
 		RHead = Rlisthead; 
+		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt newSFHead:%d!\n",SFHead);
 		wake_up_interruptible(&recvoutq);
 		//spin_unlock_bh(&recvlock);
 	}
+#if 0	
 	if(IntStat & DMA_SFRCV_INT){
 		//spin_lock_bh(&sflock);
-		//PRINTK("<pcie56_interrupt_sfrecv>:sfrecv complete interrupt!\n");
+		PRINTK("<pcie56_interrupt_sfrecv>:sfrecv complete interrupt SFHead:%d!\n",SFHead);
 		while(sf_list[SFHead].status&DMA_RCV_LIST_FLAG){
 			SFHead = (SFHead + 1)&MAX_NUM;
 		}
 		//wake_up_interruptible(&recvoutq);
 		//spin_unlock_bh(&sflock);
 	}
+#endif
 	return IRQ_HANDLED;
 }
 /***********************************************************************
@@ -1314,14 +1317,17 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 #endif
 	{//other data  ,they don't have header
 		len = len-8;
-		//PRINTK("%s:len is %d\n", __func__, len);
+		PRINTK("%s:len is %d\n", __func__, len);
 		ret = __copy_to_user(buf,buff+8,len); 
 		
 		if(ret<0)
+		{
+			spin_unlock_bh(&dev->readlock);
 			return -EIO;	
+		}
 	}	
 #endif
-//	PRINTK("%s: id is %d  RTAil is %d  ret is %d\n", __func__,dev->DeviceID,dev->RTail, ret);
+	PRINTK("%s: id is %d  RTAil is %d  ret is %d\n", __func__,dev->DeviceID,dev->RTail, ret);
 	spin_lock_bh(&dev->readlock);
 	dev->RTail = (dev->RTail+1)&MAX_NUM;//%MAXRECVQL;
 	wake_up_interruptible(&recvoutq);			//wake the recv kernel_thread to recv data
@@ -1558,7 +1564,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	Change_BELE((char *)&dev->devicesend[dev->Slisthead].length );
 	dev->devicesend[dev->Slisthead].NextDesc_low &=  SND_LIST_RESET;				//just let one-packet style
 	dev->Slisthead = dev->SHead = (dev->SHead + 1) & MAX_NUM;					//% MAXSENDQL;
-//	PRINTK("<pcie56_write>:dev->SHead  is %d   \n",dev->SHead);
+	PRINTK("<pcie56_write>:dev->SHead  is %d   \n",dev->SHead);
 	wake_up_interruptible(&sendinq);	//wake up send kernel-thread to send the data
 	spin_unlock_bh(&dev->writelock);
 	//LeaveFunction();
