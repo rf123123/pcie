@@ -55,7 +55,7 @@ Author: 706.ykx
 #define FPGA_DESTROY	0x0008000a
 
 
-#define DEVICE_COUNT 6
+#define DEVICE_COUNT 1   //6
 #define GLRZ_MAX   0x11;
 
 #define Version2
@@ -159,7 +159,7 @@ MODULE_LICENSE("GPL");
 #define RECV_OWN_HEAD			0x58	//0-15:the count of head on own side.(WR)
 #define RECV_LOCAL_COUNT		0x5C
 // FPGA config reg
-#define FPGA_SOFT_VERISON		0x40
+#define FPGA_SOFT_VERISON		0x80
 #define FPGA_SW_DESTROY           0x3C
 #define FPGA_CH_MODE			0x44
 #define CUR_MODE_SET			0x48
@@ -327,6 +327,7 @@ struct queues{
 
 void Change_BELE(unsigned char *p)
 {
+#if 0
 	UINT8 b;
 	b = p[0];
 	p[0] = p[3];
@@ -334,9 +335,11 @@ void Change_BELE(unsigned char *p)
 	b = p[1];
 	p[1] = p[2];
 	p[2] = b;
+#endif
 }
 void SetBuffer_BYTE_ChgBELE(const unsigned char *p_data, unsigned int len)
 {
+#if 0
 	unsigned int i = 0;	
 	if (len == 0)
 		return;
@@ -346,6 +349,7 @@ void SetBuffer_BYTE_ChgBELE(const unsigned char *p_data, unsigned int len)
 	for (i=0;i<len;i+=4){
 		Change_BELE((char*)(p_data+i));
 	}
+#endif
 }
 
 void write_prm(void)
@@ -1961,16 +1965,17 @@ static int __init pcie56Drv_init(void)
            goto fail_run_sendthread;
        } 
 	ret = read_BAR0(FPGA_SOFT_VERISON);
-	PRINTK("FPGA SOFTWARE VERISON is %08x\n",ret);
-	ret = read_BAR0(FPGA_HARD_STATUS);
-	PRINTK("PCIE STATUS is %08x\n",ret);
+	//PRINTK("FPGA SOFTWARE VERISON is %08x\n",ret);
+	PRINTK("FPGA SOFTWARE VERISON is %02d%02d%02d%02d%02d%02d\n",((ret>>17)&0x3f),((ret>>23)&0xf),((ret>>27)&0x1f),((ret>>12)&0x1f),((ret>>6)&0x3f),((ret>>0)&0x3f));
+	//ret = read_BAR0(FPGA_HARD_STATUS);
+	//PRINTK("PCIE STATUS is %08x\n",ret);
 #if	PCIE_INT
 	pcie56_int_enable();
 #endif
-	write_BAR0(ECC_TX_RX_SET0, 0x24924924);
-	write_BAR0(ECC_TX_RX_SET1,0x00924924);
+	//write_BAR0(ECC_TX_RX_SET0, 0x24924924);
+	//write_BAR0(ECC_TX_RX_SET1,0x00924924);
 	start_dma1(); 
-	start_sfrecv_dma();
+	//start_sfrecv_dma();
 	return SUCCESS;
 
 fail_run_sendthread:
