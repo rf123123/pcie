@@ -918,7 +918,7 @@ void send_thread(void)
 					if(sendcount > 0){
 				
 						pcie56_devs[idx].devicesend[(pcie56_devs[idx].STail+sendcount -1)&MAX_NUM].NextDesc_low |= SND_LIST_END;	
-							PRINTK("before sf dma send \n");
+							PRINTK("before sf dma send id:%x, sendcount:%d,tail:%d\n",id,sendcount,pcie56_devs[idx].STail);
 						start_dma0(idx,pcie56_devs[idx].STail);
 						 //updata the sendlist header	
 						pcie56_devs[idx].Slisttail = pcie56_devs[idx].STail = (pcie56_devs[idx].STail+sendcount)&MAX_NUM;
