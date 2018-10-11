@@ -153,7 +153,7 @@ MODULE_LICENSE("GPL");
 #define DMA_RCV_INT				0x00000002	
 #define DMA_SFSND_INT			0x00000008			
 #define DMA_SFRCV_INT			0x00000010				
-#define DMA_INT_ALL				0x0000001B
+#define DMA_INT_ALL				0x0000000B
 // recv list status reg
 #define RECV_OTHER_COUNT		0x54	//0-15:the count of head on other side,16-31:the count of tail on other side.(RD)
 #define RECV_OWN_HEAD			0x58	//0-15:the count of head on own side.(WR)
@@ -1078,9 +1078,11 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	write_BAR0(DMA_INT_STAT, IntStat);
     	pcie56_int_enable();
 	//PRINTK("IntStat is 0x%x",IntStat);
+#if 0
 	if((IntStat & DMA_INT_ALL) == 0){
 		return ERR_IRQ_NONE;
 	}
+#endif
 	if((IntStat & DMA_SND_INT) /* || (IntStat & DMA_SFSND_INT)*/){
 	PRINTK("<pcie56_interrupt_send>:send complete interrupt!\n");
 		wake_up_interruptible(&sendinq);
