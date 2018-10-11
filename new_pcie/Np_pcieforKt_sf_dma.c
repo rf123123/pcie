@@ -1293,6 +1293,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	spin_lock_bh(&dev->readlock);
 	if( dev->RHead == dev->RTail){
 		spin_unlock_bh(&dev->readlock);
+		PRINTK("pcie56_read len=0,RHead=%d\n",dev->RHead);
 		return -EAGAIN;
 	}
 
@@ -1330,7 +1331,9 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	}	
 #endif
 	PRINTK("%s: id is %d  RTAil is %d  ret is %d\n", __func__,dev->DeviceID,dev->RTail, ret);
+
 	spin_lock_bh(&dev->readlock);
+
 	dev->RTail = (dev->RTail+1)&MAX_NUM;//%MAXRECVQL;
 	wake_up_interruptible(&recvoutq);			//wake the recv kernel_thread to recv data
 	spin_unlock_bh(&dev->readlock);
@@ -1566,7 +1569,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	Change_BELE((char *)&dev->devicesend[dev->Slisthead].length );
 	dev->devicesend[dev->Slisthead].NextDesc_low &=  SND_LIST_RESET;				//just let one-packet style
 	dev->Slisthead = dev->SHead = (dev->SHead + 1) & MAX_NUM;					//% MAXSENDQL;
-	PRINTK("<pcie56_write>:dev->SHead  is %d   \n",dev->SHead);
+	PRINTK("<pcie56_write>:dev->SHead  is %d  slen: %d\n",dev->SHead,slen);
 	wake_up_interruptible(&sendinq);	//wake up send kernel-thread to send the data
 	spin_unlock_bh(&dev->writelock);
 	//LeaveFunction();
