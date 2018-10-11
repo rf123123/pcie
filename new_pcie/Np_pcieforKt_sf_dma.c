@@ -908,7 +908,7 @@ void send_thread(void)
 			for( i = Last_send; i < Last_send + DEVICE_COUNT; i++ ){
 
 				idx = i % DEVICE_COUNT;
-				if(idx > 2){
+				if(idx < 1){
 							
 					spin_lock_bh(&pcie56_devs[idx].writelock);
 					
@@ -1920,6 +1920,7 @@ static int __init pcie56Drv_init(void)
 	recv_list[i].RecvFlagtag = 0;
 	recv_list[i].RecvFlagtag1 = 0;
 	recv_list[i].RecvFlagtag2 = 0;
+#if 0
 	//alloc DMA buffer for sf recv Queue
 	Recv_buffer= (void *)dma_mem_alloc(DMA_FIFO_SIZE*MAXRECVQL);
 	memset(Recv_buffer,0,DMA_FIFO_SIZE*MAXRECVQL);
@@ -1964,6 +1965,7 @@ static int __init pcie56Drv_init(void)
 	sf_list[i].NextDesc_hig = ((UINT64) sflistPh)>>32;
 	sf_list[i].RecvFlagtag = 0;
 	sf_list[i].RecvFlagtag1 = 0;
+#endif
 	recv_list[i].RecvFlagtag2 = 0;
 
 	SetBuffer_BYTE_ChgBELE(recv_list, sizeof(struct recv_descriptor)*MAXRECVQL);
