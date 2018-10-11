@@ -1320,7 +1320,11 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 #endif
 	{//other data  ,they don't have header
 	PRINTK("%s:len is %d\n", __func__, len);
-		len = buff[4]&0xffff-8;
+		//len = (*(unsigned int *)buff+4)&0xffff-8;
+		if ((len > count) || ((GLOBALMEM_SIZE) < len)){
+			PRINTK("%s:write packet is too long,len = %ld\n", __func__, count);
+			return -EINVAL;
+		}
 		
 		PRINTK("%s:len is %d\n", __func__, len);
 		ret = __copy_to_user(buf,buff+8,len); 
