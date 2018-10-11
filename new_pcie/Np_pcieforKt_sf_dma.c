@@ -82,13 +82,13 @@ Author: 706.ykx
 #endif
 #define DEVICE_Np1_ID     0x1114       //pcie56 device id
 #define DEVICE_Np2_ID     0x1116
-#define DEVICE_LS_ID      	0x1112
+#define DEVICE_LS_ID      	0x7124
 
 #define NP1_ID 0x01
 #define NP2_ID 0x02
 
 //#define VENDOR_ID 0x7024
-#define VENDOR_ID    		 0x1556        //pcie56 vendor id
+#define VENDOR_ID    		 0xd6fa        //pcie56 vendor id
 #define DEVICE_MAJOR           66
 
 MODULE_LICENSE("GPL");
