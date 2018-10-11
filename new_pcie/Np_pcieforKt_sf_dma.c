@@ -1316,7 +1316,9 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	}else
 #endif
 	{//other data  ,they don't have header
-		len = len-8;
+	PRINTK("%s:len is %d\n", __func__, len);
+		len = buff[4]&0xffff-8;
+		
 		PRINTK("%s:len is %d\n", __func__, len);
 		ret = __copy_to_user(buf,buff+8,len); 
 		
