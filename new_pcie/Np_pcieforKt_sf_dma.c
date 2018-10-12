@@ -984,9 +984,7 @@ void recv_thread(void)
 				break;
 			}
 		}
-		else{
 
-		}
 	add_wait_queue(&recvoutq,&wait1);
 	__set_current_state(TASK_INTERRUPTIBLE);
 	schedule_timeout(20);
