@@ -851,7 +851,7 @@ void start_sfrecv_dma(void)
 **********************************************************************/
 void send_thread(void)
 {
-	int i,sendcount;
+	int i,sendcount,recvhead,recvtail;
 	int idx = 0;
 
 	i = 0;
@@ -869,6 +869,7 @@ void send_thread(void)
 		//PRINTK("send_thread loop \n");
 		if( kthread_should_stop()) 
 			break;
+
 		if((read_BAR0(DMA_SND_CTRL)&DMA_STATUS_BUSY)==0){     //SEND DMA is not working
 
 			//for( i = Last_send; i < Last_send + DEVICE_COUNT; i++ )
@@ -877,12 +878,15 @@ void send_thread(void)
 				//idx = i % DEVICE_COUNT;
 				idx = 0;
 				if(idx < 1){
-							
+					spin_lock_bh(&recvlock);	
+					recvtail = RTail;
+					recvhead = RHead;
+					spin_unlock_bh(&recvlock);
+					
 					spin_lock_bh(&pcie56_devs[idx].writelock);
 					
-					sendcount = Sendnum(idx,RHead,RTail,SENDMAX);
+					sendcount = Sendnum(idx,recvhead,recvtail,SENDMAX);
 					if(sendcount > 0){
-				
 						PRINTK("before sf dma send idx:%x, sendcount:%d,tail:%d\n",idx,sendcount,pcie56_devs[idx].STail);
 						pcie56_devs[idx].devicesend[(pcie56_devs[idx].STail+sendcount -1)&MAX_NUM].NextDesc_low |= SND_LIST_END;	
 							//PRINTK("before sf dma send idx:%x, sendcount:%d,tail:%d\n",idx,sendcount,pcie56_devs[idx].STail);
@@ -919,7 +923,7 @@ void send_thread(void)
 **********************************************************************/
 void recv_thread(void)
 {
-	int id,recvlen;//,recvlisttail;
+	int id,recvlen,recvlisttail;
 	unsigned char* recvbuff;
 	//int recv_flag = 0;
 	
@@ -932,68 +936,32 @@ void recv_thread(void)
 	while(1){
 		if( kthread_should_stop()) 
 			break;
-		smp_mb();
-#if 0		
-		if((sf_list[SFTail].status&DMA_RCV_LIST_FLAG)!=0){
-			do_gettimeofday(&start_recvDMA);
-			id = *(unsigned int *)(&RsfQ[SFTail].Buffer[12]) ;
-			recvlen	=  sf_list[SFTail].status;
-			Change_BELE((unsigned char *)&recvlen);
-			Change_BELE((unsigned char *)&id);
-			id &= 0xff; 
-			recvlen = recvlen & 0x7fffffff;
-		//	PRINTK("recvlist is %d\n",recvlisttail);
-			spin_lock_bh(&pcie56_devs[id].readlock);
-			if(((pcie56_devs[id].RHead+1)&MAX_NUM)/*%MAXRECVQL*/ != pcie56_devs[id].RTail){
-				recvbuff = pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].Buffer;
-				memcpy(recvbuff,RsfQ[SFTail].Buffer,recvlen);
-				pcie56_devs[id].Recv_count++;
-				sf_list[SFTail].status = 0;
-				SFTail = (SFTail + 1);
-				if(SFTail>MAX_NUM){	
-					SFTail &= MAX_NUM;
-					Localtail = (Localtail&0x8000)+SFTail +0x8000;
-						
-				}else{
-					Localtail = (Localtail&0x8000)+SFTail;
-				}
-				pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].len = recvlen;
-				pcie56_devs[id].RHead= (pcie56_devs[id].RHead + 1)&MAX_NUM;//%MAXRECVQL;
-				spin_unlock_bh(&pcie56_devs[id].readlock);
-				wake_up_interruptible(&pcie56_devs[id].recvinq);	
-				do_gettimeofday(&end_recvDMA);
-				
-				
-			}
-			else{
-				spin_unlock_bh(&pcie56_devs[id].readlock);
-			}
-
-		}
-		else{
+		//smp_mb();
 		
-		}
-#endif
-		if((recv_list[Rlisttail].status&DMA_RCV_LIST_FLAG)!=0){
+		spin_lock_bh(&recvlock);
+	 	recvlisttail = Rlisttail;
+		spin_unlock_bh(&recvlock);
+		while((recv_list[recvlisttail].status&DMA_RCV_LIST_FLAG)!=0){
 		//	PRINTK("recv_thread habe data \n");
 			//id = *(unsigned int *)(&RcvQ[Rlisttail].Buffer[12]) ;
 			id = 0;
-			recvlen= recv_list[Rlisttail].status;
+			recvlen= recv_list[recvlisttail].status;
 			Change_BELE((unsigned char *)&recvlen);
 			Change_BELE((unsigned char *)&id);
 			//id &= 0xff; 
 			recvlen = recvlen & 0x7fffffff;
-			PRINTK("%d recv_thread habe data, recvlen:%d,Rlisttail:%d,pcie56_devs[%d].RHead:%d,status:0x%x\n",id,recvlen,Rlisttail,id,pcie56_devs[id].RHead,recv_list[Rlisttail].status);
+			PRINTK("%d recv_thread habe data, recvlen:%d,Rlisttail:%d,pcie56_devs[%d].RHead:%d,status:0x%x\n",id,recvlen,recvlisttail,id,pcie56_devs[id].RHead,recv_list[recvlisttail].status);
 			PRINTK("recv_thread pcie56_devs[%d].RHead:%d,pcie56_devs[%d].RTail",id,pcie56_devs[id].RHead,id,pcie56_devs[id].RTail);
 			spin_lock_bh(&pcie56_devs[id].readlock);
 			if(((pcie56_devs[id].RHead+1)&MAX_NUM)/*%MAXRECVQL*/ != pcie56_devs[id].RTail){
 				recvbuff = pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].Buffer;
 				
-				memcpy(recvbuff,RcvQ[Rlisttail].Buffer,recvlen);
-				recv_list[Rlisttail].status = 0;
-				Rlisttail = RTail = Rlisttail+1;
-				if(Rlisttail>MAX_NUM){	
-					Rlisttail &= MAX_NUM;
+				memcpy(recvbuff,RcvQ[recvlisttail].Buffer,recvlen);
+				recv_list[recvlisttail].status = 0;
+				//Rlisttail = RTail = Rlisttail+1;
+				recvlisttail++;
+				if(recvlisttail>MAX_NUM){	
+					recvlisttail &= MAX_NUM;
 					//Own_head = (Own_head&0x8000)+Rlisttail +0x8000;
 						
 				}else{
@@ -1005,10 +973,15 @@ void recv_thread(void)
 				pcie56_devs[id].RHead= (pcie56_devs[id].RHead + 1)&MAX_NUM;//%MAXRECVQL;
 				
 				spin_unlock_bh(&pcie56_devs[id].readlock);
-				wake_up_interruptible(&pcie56_devs[id].recvinq);	
+				wake_up_interruptible(&pcie56_devs[id].recvinq);
+				
+				spin_lock_bh(&recvlock);
+				Rlisttail = RTail = recvlisttail;
+				spin_unlock_bh(&recvlock);
 			}
 			else{
 				spin_unlock_bh(&pcie56_devs[id].readlock);
+				break;
 			}
 		}
 		else{
@@ -1064,8 +1037,8 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		RHead = Rlisthead; 
 		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt RHead:%d,RTail:%d!\n",RHead,RTail);
 #endif
-		wake_up_process(recvtask);
-		//wake_up_interruptible(&recvoutq);
+		//wake_up_process(recvtask);
+		wake_up_interruptible(&recvoutq);
 		//spin_unlock_bh(&recvlock);
 	}
 #if 0	
@@ -1301,7 +1274,6 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 		
 		if(ret<0)
 		{
-			spin_unlock_bh(&dev->readlock);
 			return -EIO;	
 		}
 	}	
