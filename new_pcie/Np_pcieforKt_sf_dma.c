@@ -906,9 +906,11 @@ void send_thread(void)
 #endif
 		if((read_BAR0(DMA_SND_CTRL)&DMA_STATUS_BUSY)==0){     //SEND DMA is not working
 
-			for( i = Last_send; i < Last_send + DEVICE_COUNT; i++ ){
+			//for( i = Last_send; i < Last_send + DEVICE_COUNT; i++ )
+			{
 
-				idx = i % DEVICE_COUNT;
+				//idx = i % DEVICE_COUNT;
+				idx = 0;
 				if(idx < 1){
 							
 					spin_lock_bh(&pcie56_devs[idx].writelock);
@@ -1449,7 +1451,10 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		return -EINVAL;
 	}
 	if((count==0)||(buf==NULL))
-		return 0;
+	{
+		PRINTK("%s:write param invaild,len = %ld\n", __func__, count);
+		return -EINVAL;
+	}
 	
 	//PRINTK("<pcie_write>    dev->DeviceID is %d\n",dev->DeviceID);
 	
@@ -1521,15 +1526,23 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		{
 
 		slen = count+8;
-		
+		slen = (slen + 7)&0xfffffff8 ;
+		if (GLOBALMEM_SIZE < slen)
+		{
+			PRINTK("%s:write packet is too long,len = %ld\n", __func__, slen);
+			return -EIO;
+		}
 		*(unsigned int *)(&buffer[0]) = ((0xd6fa<<16)|((buffCount++)&0xffff));	
 		*(unsigned int *)(&buffer[4]) = slen&0xffff;
 		//*(unsigned int *)(&buffer[8]) = (0<<16)+(0<<8);
 
 		// PRINTK("<pcie_write >  before copy from user\n");
 		 ret = __copy_from_user(buffer+8, buf, count);
-		 if(ret)
-	    		return -EIO;	
+		if(ret)
+		{
+			PRINTK("%s:__copy_from_user error = %d\n", __func__, ret);
+			return -EIO;
+		}
 //		 *(unsigned int *)(&buffer[12]) &= 0xffffff00;
 //		 *(unsigned int *)(&buffer[12])  =  dev->DeviceID&0xff;					//it mask which device has recevied	 this data	
 		// Send_count ++;
@@ -1765,6 +1778,7 @@ static int __init pcie56Drv_init(void)
 	if (pci_enable_device(pcie56)){
 		PRINTK("<pcie56Drv_init>:pci_enable_device err! return -EIO\n");
 		ret = -EIO;
+		goto OUT;
 	}
 	pcie56_devs = kmalloc(DEVICE_COUNT*sizeof (struct pcie56_dev), GFP_KERNEL);
 	if (!pcie56_devs) {
@@ -1919,7 +1933,7 @@ static int __init pcie56Drv_init(void)
 		}
 	memset(Recvlist,0,sizeof(struct recv_descriptor)*MAXRECVQL);
 	recvlistPh=dma_map_single(&pcie56->dev,Recvlist,sizeof(struct recv_descriptor)*MAXRECVQL,DMA_BIDIRECTIONAL);
-	printk("<NP1_init>: recvlistBufferPh = 0x%x\n",(int)recvlistPh);
+	printk("<pcie56_init>: recvlistBufferPh = 0x%x\n",(int)recvlistPh);
 	printk("<pcie56_init>: recvlist_Buffer = 0x%x\n",(int)Recvlist);
 	recv_list= (struct recv_descriptor *)Recvlist;
 	for (i=0;i<MAXRECVQL-1;i++){
