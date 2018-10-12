@@ -63,7 +63,7 @@ Author: 706.ykx
 //#define Server 0
 #define DEBUG
 
-#define PCIE_INT 0
+#define PCIE_INT 1
 
 
 #ifdef DEBUG
@@ -1088,16 +1088,20 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	if((IntStat & DMA_SND_INT) /* || (IntStat & DMA_SFSND_INT)*/){
 	PRINTK("<pcie56_interrupt_send>:send complete interrupt!\n");
 		wake_up_interruptible(&sendinq);
+		//wake_up_process(sendtask);
 	}
 	if(IntStat & DMA_RCV_INT){ 
 		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt SFHead:%d!\n",SFHead);
+#if 0
 		//spin_lock_bh(&recvlock);
 		while(recv_list[Rlisthead].status&DMA_RCV_LIST_FLAG){
 			Rlisthead = (Rlisthead + 1)&MAX_NUM;
 		}
 		RHead = Rlisthead; 
 		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt newSFHead:%d!\n",SFHead);
-		wake_up_interruptible(&recvoutq);
+#endif
+		wake_up_process(recvtask);
+		//wake_up_interruptible(&recvoutq);
 		//spin_unlock_bh(&recvlock);
 	}
 #if 0	
