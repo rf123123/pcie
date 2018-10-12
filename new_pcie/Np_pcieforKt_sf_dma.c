@@ -61,7 +61,7 @@ Author: 706.ykx
 #define Version2
 
 //#define Server 0
-#define DEBUG
+//#define DEBUG
 
 #define PCIE_INT 1
 
@@ -1494,7 +1494,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		{
 
 		slen = count+8;
-		slen = (slen + 7)&0xfffffff8 ;
+		//slen = (slen + 7)&0xfffffff8 ;
 		if (GLOBALMEM_SIZE < slen)
 		{
 			PRINTK("%s:write packet is too long,len = %ld\n", __func__, slen);
@@ -1549,14 +1549,16 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		PRINTK("<Write ERROR>pcie56_dev[%d].Send_count is %d     PKG_id is %d\n",dev->DeviceID,dev->Send_count,*(unsigned int *)(buffer+32+8));
 	}
 	dev->Send_count++;
-#endif	
+#endif
+	PRINTK("<pcie56_write>:dev->SHead  is %d  slen: %d\n",dev->SHead,slen);
+	slen = (slen + 7)&0xfffffff8;
 	spin_lock_bh(&dev->writelock);
 	dev->devicesendq[dev->SHead].len = slen;
 	dev->devicesend[dev->Slisthead].length =( dev->devicesendq[dev->SHead].len+7)&0xfffffff8;
 	Change_BELE((char *)&dev->devicesend[dev->Slisthead].length );
 	dev->devicesend[dev->Slisthead].NextDesc_low &=  SND_LIST_RESET;				//just let one-packet style
 	dev->Slisthead = dev->SHead = (dev->SHead + 1) & MAX_NUM;					//% MAXSENDQL;
-	PRINTK("<pcie56_write>:dev->SHead  is %d  slen: %d\n",dev->SHead,slen);
+	PRINTK("<pcie56_write>:dev->SHead  is %d  slen2: %d\n",dev->SHead,slen);
 	wake_up_interruptible(&sendinq);	//wake up send kernel-thread to send the data
 	spin_unlock_bh(&dev->writelock);
 	//LeaveFunction();
