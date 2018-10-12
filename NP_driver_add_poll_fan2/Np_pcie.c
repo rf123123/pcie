@@ -1522,17 +1522,17 @@ static int __init pcie56Drv_init(void)
 	else {
 			PRINTK("<pcie56Drv_init>: Register interrupt successful,irq 0x%lx\n",(unsigned long )pcie56->irq);
 		}
-#if 0
+#if 1
 	//	interrupt register/disable/enable
 		recvtask = kthread_run(recv_thread, NULL, "recv_kthread");
 		if(!recvtask){
 			   ret = PTR_ERR(recvtask);
-			   goto fail_run_readthread;
+			   goto fail_req_irq;
 		} 
 		 sendtask = kthread_run(send_thread, NULL, "send_kthread");
 		  if(!sendtask){
 			   ret = PTR_ERR(sendtask);
-			   goto fail_run_sendthread;
+			   goto fail_req_irq;
 		   } 
 #endif
 	ret = read_BAR0(FPGA_SOFT_VERISON);
