@@ -168,10 +168,10 @@ Author: 706.ykx
 #define FPGA_SW_RST			0x94
 
 //list contrl 
-#define DMA_RCV_LIST_RESET       0xFFFFFF7F
-#define DMA_RCV_LIST_FLAG		0x00000080
-#define SND_LIST_END                   0x01000000
-#define SND_LIST_RESET			0xFEFFFFFF
+#define DMA_RCV_LIST_RESET       0x7FFFFFFFF
+#define DMA_RCV_LIST_FLAG		0x80000000
+#define SND_LIST_END               0x01    //0x01000000
+#define SND_LIST_RESET			0xFFFFFFFE
 
 //LS SRAM
 #define LS_SRAM_STATUS_REG			0x80
@@ -984,6 +984,7 @@ void recv_thread(void)
 			//id &= 0xff; 
 			recvlen = recvlen & 0x7fffffff;
 			PRINTK("%d recv_thread habe data, recvlen:%d,Rlisttail:%d,pcie56_devs[%d].RHead:%d,status:0x%x\n",id,recvlen,Rlisttail,id,pcie56_devs[id].RHead,recv_list[Rlisttail].status);
+			PRINTK("recv_thread pcie56_devs[%d].RHead:%d,pcie56_devs[%d].RTail"id,pcie56_devs[id].RHead,id,pcie56_devs[id].RTail);
 			spin_lock_bh(&pcie56_devs[id].readlock);
 			if(((pcie56_devs[id].RHead+1)&MAX_NUM)/*%MAXRECVQL*/ != pcie56_devs[id].RTail){
 				recvbuff = pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].Buffer;
