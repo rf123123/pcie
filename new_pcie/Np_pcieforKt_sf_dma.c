@@ -984,7 +984,7 @@ void recv_thread(void)
 			//id &= 0xff; 
 			recvlen = recvlen & 0x7fffffff;
 			PRINTK("%d recv_thread habe data, recvlen:%d,Rlisttail:%d,pcie56_devs[%d].RHead:%d,status:0x%x\n",id,recvlen,Rlisttail,id,pcie56_devs[id].RHead,recv_list[Rlisttail].status);
-			PRINTK("recv_thread pcie56_devs[%d].RHead:%d,pcie56_devs[%d].RTail"id,pcie56_devs[id].RHead,id,pcie56_devs[id].RTail);
+			PRINTK("recv_thread pcie56_devs[%d].RHead:%d,pcie56_devs[%d].RTail",id,pcie56_devs[id].RHead,id,pcie56_devs[id].RTail);
 			spin_lock_bh(&pcie56_devs[id].readlock);
 			if(((pcie56_devs[id].RHead+1)&MAX_NUM)/*%MAXRECVQL*/ != pcie56_devs[id].RTail){
 				recvbuff = pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].Buffer;
