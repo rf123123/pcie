@@ -890,13 +890,11 @@ void send_thread(void)
 						 //updata the sendlist header	
 						pcie56_devs[idx].Slisttail = pcie56_devs[idx].STail = (pcie56_devs[idx].STail+sendcount)&MAX_NUM;
 						wake_up_interruptible(&pcie56_devs[idx].sendoutq);
+						spin_unlock_bh(&pcie56_devs[idx].writelock);
+					}
+					else
+					{
 						spin_unlock_bh(&pcie56_devs[idx].writelock);	
-						
-						break;
-						
-					}else
-						{
-							spin_unlock_bh(&pcie56_devs[idx].writelock);	
 					}
 				}
 			}
@@ -1056,14 +1054,14 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		//wake_up_process(sendtask);
 	}
 	if(IntStat & DMA_RCV_INT){ 
-		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt SFHead:%d!\n",SFHead);
+		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt SFHead:%d!\n",RHead);
 #if 1
 		//spin_lock_bh(&recvlock);
 		while(recv_list[Rlisthead].status&DMA_RCV_LIST_FLAG){
 			Rlisthead = (Rlisthead + 1)&MAX_NUM;
 		}
 		RHead = Rlisthead; 
-		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt newSFHead:%d!\n",SFHead);
+		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt newSFHead:%d!\n",RHead);
 #endif
 		wake_up_process(recvtask);
 		//wake_up_interruptible(&recvoutq);
