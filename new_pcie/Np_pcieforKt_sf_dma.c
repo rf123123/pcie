@@ -870,40 +870,6 @@ void send_thread(void)
 		//PRINTK("send_thread loop \n");
 		if( kthread_should_stop()) 
 			break;
-#if 0		
-		if((read_BAR0(DMA_SFSND_CTRL)&DMA_STATUS_BUSY)==0){     //SF SEND DMA is not working
-			
-			for( i = SFLast_send+1; i <( SFLast_send + 3); i++ ){
-
-				idx = i % 3;
-				
-				//PRINTK("can send  \n");
-				spin_lock_bh(&pcie56_devs[idx].writelock);
-				
-				sendcount = Sendnum(idx,SFHead,SFTail,SENDMAX);
-
-				if(sendcount > 0){
-					do_gettimeofday(&start_sendDMA);
-				
-					pcie56_devs[idx].devicesend[(pcie56_devs[idx].STail+sendcount -1)&MAX_NUM].NextDesc_low |= SND_LIST_END;	//
-			//		PRINTK("before sf dma send \n");
-					start_sfsend_dma(idx,pcie56_devs[idx].STail);
-					 //updata the sendlist header	
-					pcie56_devs[idx].Slisttail = pcie56_devs[idx].STail = (pcie56_devs[idx].STail+sendcount)&MAX_NUM; 
-					wake_up_interruptible(&pcie56_devs[idx].sendoutq);
-					spin_unlock_bh(&pcie56_devs[idx].writelock);
-					do_gettimeofday(&end_sendDMA);
-					break;
-					
-				
-				}else
-				{
-					spin_unlock_bh(&pcie56_devs[idx].writelock);
-				}
-			}
-			SFLast_send = idx;
-		}
-#endif
 		if((read_BAR0(DMA_SND_CTRL)&DMA_STATUS_BUSY)==0){     //SEND DMA is not working
 
 			//for( i = Last_send; i < Last_send + DEVICE_COUNT; i++ )
@@ -916,11 +882,11 @@ void send_thread(void)
 					spin_lock_bh(&pcie56_devs[idx].writelock);
 					
 					sendcount = Sendnum(idx,RHead,RTail,SENDMAX);
-
+				PRINTK("before sf dma send idx:%x, sendcount:%d,tail:%d\n",idx,sendcount,pcie56_devs[idx].STail);
 					if(sendcount > 0){
 				
 						pcie56_devs[idx].devicesend[(pcie56_devs[idx].STail+sendcount -1)&MAX_NUM].NextDesc_low |= SND_LIST_END;	
-							PRINTK("before sf dma send idx:%x, sendcount:%d,tail:%d\n",idx,sendcount,pcie56_devs[idx].STail);
+							//PRINTK("before sf dma send idx:%x, sendcount:%d,tail:%d\n",idx,sendcount,pcie56_devs[idx].STail);
 						start_dma0(idx,pcie56_devs[idx].STail);
 						 //updata the sendlist header	
 						pcie56_devs[idx].Slisttail = pcie56_devs[idx].STail = (pcie56_devs[idx].STail+sendcount)&MAX_NUM;
@@ -1092,7 +1058,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	}
 	if(IntStat & DMA_RCV_INT){ 
 		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt SFHead:%d!\n",SFHead);
-#if 0
+#if 1
 		//spin_lock_bh(&recvlock);
 		while(recv_list[Rlisthead].status&DMA_RCV_LIST_FLAG){
 			Rlisthead = (Rlisthead + 1)&MAX_NUM;
