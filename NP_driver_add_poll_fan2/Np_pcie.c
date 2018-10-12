@@ -38,6 +38,7 @@ Author: 706.ykx
 #define FPGA_CONFIG		0x00080005	//fpga config	interface
 #define SFIO_FLAG		0x00080006	//slect sf zone interface
 
+#define DEVICE_COUNT 1   //6
 
 
 #define Version2
@@ -169,11 +170,13 @@ void pcie56_int_enable(void);
 void pcie56_int_disable(void);
 void write_BAR0(phys_addr_t   offset, unsigned int data);
 
-struct fasync_struct *async_queue;	
- wait_queue_head_t sendoutq; 			
- wait_queue_head_t recvinq;			
- spinlock_t lock;         			 		/* mutual exclusion semaphore */
- struct semaphore en_sem; 			
+struct fasync_struct *async_queue;
+struct task_struct *recvtask;
+struct task_struct *sendtask;
+wait_queue_head_t sendoutq; 			
+wait_queue_head_t recvinq;			
+spinlock_t lock;         			 		/* mutual exclusion semaphore */
+struct semaphore en_sem; 			
 struct semaphore  write_sem;
 struct semaphore  read_sem;
 
@@ -309,6 +312,9 @@ struct send_descriptor{
 
 spinlock_t sendLock;
 spinlock_t recvLock;
+//spinlock_t readlock;						/* mutual exclusion semaphore */
+//spinlock_t writelock;
+
 //spinlock_t sQLock = SPIN_LOCK_UNLOCKED;
 //spinlock_t rQLock = SPIN_LOCK_UNLOCKED;
 
@@ -509,6 +515,218 @@ int pcie56_fasync(int fd, struct file *filp, int mode)
 	return fasync_helper(fd, filp, mode, &async_queue);
 }
 */
+
+
+/**********************************************************************
+ 			send_thread
+**********************************************************************/
+#if 0
+void send_thread(void)
+{
+	int i,sendcount;
+	int idx = 0;
+
+	i = 0;
+	UINT 		Last_send = 0;
+	//UINT 		SFLast_send = 0;
+
+	DECLARE_WAITQUEUE(wait1, current);
+	spin_lock_irq(&current->sighand->siglock);
+	siginitsetinv(&current->blocked , sigmask(SIGKILL) | sigmask(SIGSTOP));
+	recalc_sigpending();
+	spin_unlock_irq(&current->sighand->siglock);
+
+	
+	while(1){
+		//PRINTK("send_thread loop \n");
+		if( kthread_should_stop()) 
+			break;
+#if 0		
+		if((read_BAR0(DMA_SFSND_CTRL)&DMA_STATUS_BUSY)==0){     //SF SEND DMA is not working
+			
+			for( i = SFLast_send+1; i <( SFLast_send + 3); i++ ){
+
+				idx = i % 3;
+				
+				//PRINTK("can send  \n");
+				spin_lock_bh(&pcie56_devs[idx].writelock);
+				
+				sendcount = Sendnum(idx,SFHead,SFTail,SENDMAX);
+
+				if(sendcount > 0){
+					do_gettimeofday(&start_sendDMA);
+				
+					pcie56_devs[idx].devicesend[(pcie56_devs[idx].STail+sendcount -1)&MAX_NUM].NextDesc_low |= SND_LIST_END;	//
+			//		PRINTK("before sf dma send \n");
+					start_sfsend_dma(idx,pcie56_devs[idx].STail);
+					 //updata the sendlist header	
+					pcie56_devs[idx].Slisttail = pcie56_devs[idx].STail = (pcie56_devs[idx].STail+sendcount)&MAX_NUM; 
+					wake_up_interruptible(&pcie56_devs[idx].sendoutq);
+					spin_unlock_bh(&pcie56_devs[idx].writelock);
+					do_gettimeofday(&end_sendDMA);
+					break;
+					
+				
+				}else
+				{
+					spin_unlock_bh(&pcie56_devs[idx].writelock);
+				}
+			}
+			SFLast_send = idx;
+		}
+#endif
+		if((read_BAR0(DMA_SND_CTRL)&DMA_SND_BUSY)==0){     //SEND DMA is not working
+
+			for( i = Last_send; i < Last_send + DEVICE_COUNT; i++ ){
+
+				idx = i % DEVICE_COUNT;
+				if(idx < 1){
+							
+					spin_lock_bh(&pcie56_devs[idx].writelock);
+					
+					sendcount = Sendnum(idx,RHead,RTail,SENDMAX);
+
+					if(sendcount > 0){
+				
+						pcie56_devs[idx].devicesend[(pcie56_devs[idx].STail+sendcount -1)&MAX_NUM].NextDesc_low |= SND_LIST_END;	
+							PRINTK("before sf dma send idx:%x, sendcount:%d,tail:%d\n",idx,sendcount,pcie56_devs[idx].STail);
+						start_dma0(idx,pcie56_devs[idx].STail);
+						 //updata the sendlist header	
+						pcie56_devs[idx].Slisttail = pcie56_devs[idx].STail = (pcie56_devs[idx].STail+sendcount)&MAX_NUM;
+						wake_up_interruptible(&pcie56_devs[idx].sendoutq);
+						spin_unlock_bh(&pcie56_devs[idx].writelock);	
+						
+						break;
+						
+					}else
+						{
+							spin_unlock_bh(&pcie56_devs[idx].writelock);	
+					}
+				}
+			}
+			Last_send = idx;
+		}
+		else{
+			//nothing to do
+		}
+			//end if(DMA is not working)
+
+		add_wait_queue(&sendinq,&wait1);
+		__set_current_state(TASK_INTERRUPTIBLE);
+		schedule_timeout(20);
+		__set_current_state(TASK_RUNNING);
+		remove_wait_queue(&sendinq,&wait1);
+
+	}
+	//end while 1 
+}
+/**********************************************************************
+ 			recv_thread
+**********************************************************************/
+void recv_thread(void)
+{
+	int id,recvlen;//,recvlisttail;
+	unsigned char* recvbuff;
+	//int recv_flag = 0;
+	
+	DECLARE_WAITQUEUE(wait1, current);
+	spin_lock_irq(&current->sighand->siglock);
+	siginitsetinv(&current->blocked , sigmask(SIGKILL) | sigmask(SIGSTOP));
+	recalc_sigpending();
+	spin_unlock_irq(&current->sighand->siglock);
+
+	while(1){
+		if( kthread_should_stop()) 
+			break;
+		smp_mb();
+#if 0		
+		if((sf_list[SFTail].status&DMA_RCV_LIST_FLAG)!=0){
+			do_gettimeofday(&start_recvDMA);
+			id = *(unsigned int *)(&RsfQ[SFTail].Buffer[12]) ;
+			recvlen	=  sf_list[SFTail].status;
+			Change_BELE((unsigned char *)&recvlen);
+			Change_BELE((unsigned char *)&id);
+			id &= 0xff; 
+			recvlen = recvlen & 0x7fffffff;
+		//	PRINTK("recvlist is %d\n",recvlisttail);
+			spin_lock_bh(&pcie56_devs[id].readlock);
+			if(((pcie56_devs[id].RHead+1)&MAX_NUM)/*%MAXRECVQL*/ != pcie56_devs[id].RTail){
+				recvbuff = pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].Buffer;
+				memcpy(recvbuff,RsfQ[SFTail].Buffer,recvlen);
+				pcie56_devs[id].Recv_count++;
+				sf_list[SFTail].status = 0;
+				SFTail = (SFTail + 1);
+				if(SFTail>MAX_NUM){	
+					SFTail &= MAX_NUM;
+					Localtail = (Localtail&0x8000)+SFTail +0x8000;
+						
+				}else{
+					Localtail = (Localtail&0x8000)+SFTail;
+				}
+				pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].len = recvlen;
+				pcie56_devs[id].RHead= (pcie56_devs[id].RHead + 1)&MAX_NUM;//%MAXRECVQL;
+				spin_unlock_bh(&pcie56_devs[id].readlock);
+				wake_up_interruptible(&pcie56_devs[id].recvinq);	
+				do_gettimeofday(&end_recvDMA);
+				
+				
+			}
+			else{
+				spin_unlock_bh(&pcie56_devs[id].readlock);
+			}
+
+		}
+		else{
+		
+		}
+#endif
+		if((recv_list[Rlisttail].status&DMA_RCV_LIST_FLAG)!=0){
+		//	PRINTK("recv_thread habe data \n");
+			//id = *(unsigned int *)(&RcvQ[Rlisttail].Buffer[12]) ;
+			id = 0;
+			recvlen= recv_list[Rlisttail].status;
+			Change_BELE((unsigned char *)&recvlen);
+			Change_BELE((unsigned char *)&id);
+			id &= 0xff; 
+			recvlen = recvlen & 0x7fffffff;
+		//	PRINTK("%d recv_thread habe data \n",id);
+			spin_lock_bh(&pcie56_devs[id].readlock);
+			if(((pcie56_devs[id].RHead+1)&MAX_NUM)/*%MAXRECVQL*/ != pcie56_devs[id].RTail){
+				recvbuff = pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].Buffer;
+				
+				memcpy(recvbuff,RcvQ[Rlisttail].Buffer,recvlen);
+				recv_list[Rlisttail].status = 0;
+				Rlisttail = RTail = Rlisttail+1;
+				if(Rlisttail>MAX_NUM){	
+					Rlisttail &= MAX_NUM;
+					//Own_head = (Own_head&0x8000)+Rlisttail +0x8000;
+						
+				}else{
+					//Own_head = (Own_head&0x8000)+Rlisttail;
+				}
+			
+				//write_BAR0(RECV_OWN_HEAD, (Own_head&0xffff));
+				pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].len = recvlen;
+				pcie56_devs[id].RHead= (pcie56_devs[id].RHead + 1)&MAX_NUM;//%MAXRECVQL;
+				
+				spin_unlock_bh(&pcie56_devs[id].readlock);
+				wake_up_interruptible(&pcie56_devs[id].recvinq);	
+			}
+			else{
+				spin_unlock_bh(&pcie56_devs[id].readlock);
+			}
+		}
+		else{
+
+		}
+	add_wait_queue(&recvoutq,&wait1);
+	__set_current_state(TASK_INTERRUPTIBLE);
+	schedule_timeout(20);
+	__set_current_state(TASK_RUNNING);
+	remove_wait_queue(&recvoutq,&wait1);		
+	}
+}
+#endif
 /**********************************************************************
 			中断处理函数
 **********************************************************************/
@@ -608,6 +826,7 @@ int pcie56_ioctl(struct inode *in, struct file *filp, unsigned int cmd ,unsigned
 	switch(cmd){
 
 	case READ_DATA:
+#if 0
 			if (down_interruptible(&en_sem)) 
 				{ return -EAGAIN;
 				 PRINTK("<pcie56_write>: get sem error!\n");
@@ -628,6 +847,7 @@ int pcie56_ioctl(struct inode *in, struct file *filp, unsigned int cmd ,unsigned
 			ret = Rencrycp[Rentail].len;
 			Rentail = (Rentail+1)%MAXENCRYPT;
 			up(&en_sem);
+#endif
 			break;
 	case WRITE_DATA:	
 			if (down_interruptible(&write_sem))
@@ -1090,7 +1310,7 @@ static int __init pcie56Drv_init(void)
 	init_waitqueue_head(&recvinq);
 	spin_lock_init(&lock);
 	spin_lock_init(&sendLock);
-	spin_lock_init(&lock);
+	spin_lock_init(&recvLock);
 
 	pcie56=pci_get_device(VENDOR_ID , DEVICE_LS_ID ,NULL);
 
@@ -1302,6 +1522,19 @@ static int __init pcie56Drv_init(void)
 	else {
 			PRINTK("<pcie56Drv_init>: Register interrupt successful,irq 0x%lx\n",(unsigned long )pcie56->irq);
 		}
+#if 0
+	//	interrupt register/disable/enable
+		recvtask = kthread_run(recv_thread, NULL, "recv_kthread");
+		if(!recvtask){
+			   ret = PTR_ERR(recvtask);
+			   goto fail_run_readthread;
+		} 
+		 sendtask = kthread_run(send_thread, NULL, "send_kthread");
+		  if(!sendtask){
+			   ret = PTR_ERR(sendtask);
+			   goto fail_run_sendthread;
+		   } 
+#endif
 	ret = read_BAR0(FPGA_SOFT_VERISON);
 	//PRINTK("FPGA SOFTWARE VERISON is %08x\n",ret);
 	PRINTK("FPGA SOFTWARE VERISON is %02d%02d%02d%02d%02d%02d\n",((ret>>17)&0x3f),((ret>>23)&0xf),((ret>>27)&0x1f),((ret>>12)&0x1f),((ret>>6)&0x3f),((ret>>0)&0x3f));
