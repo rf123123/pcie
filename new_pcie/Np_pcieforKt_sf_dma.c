@@ -1299,7 +1299,7 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 		}
 		
 		PRINTK("%s:len is %d\n", __func__, len);
-		ret = __copy_to_user(buf,buff+8,len); 
+		ret = __copy_to_user(buf,buff,len); 
 		
 		if(ret<0)
 		{
