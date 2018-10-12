@@ -253,11 +253,11 @@ int main(int argc,char* argv[])
 			 		printf("read: ret: %d\n",re);
 			if(re > 0)
 			{
-			 for(int i=0;i <100; i++)
+			 for(int i=0;(i <100)&&(i<re); i++)
 			 	{
 			 		printf("read reg: %d, data:%d\n",i,rebuffer[i]&0xff);
 			 	}
-			 for(int i=re-1;i >re-1-100; i--)
+			 for(int i=re-1;(i>re-1-100)&&(i>=0); i--)
 			 	{
 			 		printf("read reg: %d, data:%d\n",i,rebuffer[i]&0xff);
 			 	}
