@@ -881,9 +881,9 @@ void send_thread(void)
 					spin_lock_bh(&pcie56_devs[idx].writelock);
 					
 					sendcount = Sendnum(idx,RHead,RTail,SENDMAX);
-				PRINTK("before sf dma send idx:%x, sendcount:%d,tail:%d\n",idx,sendcount,pcie56_devs[idx].STail);
 					if(sendcount > 0){
 				
+						PRINTK("before sf dma send idx:%x, sendcount:%d,tail:%d\n",idx,sendcount,pcie56_devs[idx].STail);
 						pcie56_devs[idx].devicesend[(pcie56_devs[idx].STail+sendcount -1)&MAX_NUM].NextDesc_low |= SND_LIST_END;	
 							//PRINTK("before sf dma send idx:%x, sendcount:%d,tail:%d\n",idx,sendcount,pcie56_devs[idx].STail);
 						start_dma0(idx,pcie56_devs[idx].STail);
@@ -1054,14 +1054,14 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		//wake_up_process(sendtask);
 	}
 	if(IntStat & DMA_RCV_INT){ 
-		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt SFHead:%d!\n",RHead);
+		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt RHead:%d,RTail:%d!\n",RHead,RTail);
 #if 1
 		//spin_lock_bh(&recvlock);
 		while(recv_list[Rlisthead].status&DMA_RCV_LIST_FLAG){
 			Rlisthead = (Rlisthead + 1)&MAX_NUM;
 		}
 		RHead = Rlisthead; 
-		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt newSFHead:%d!\n",RHead);
+		PRINTK("<pcie56Drv_interrupt>:DMA_RCV_INT complete interrupt RHead:%d,RTail:%d!\n",RHead,RTail);
 #endif
 		wake_up_process(recvtask);
 		//wake_up_interruptible(&recvoutq);
@@ -1289,14 +1289,14 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 #endif
 	{//other data  ,they don't have header
 	PRINTK("%s:len is %d\n", __func__, len);
-		//len = (*(unsigned int *)buff+4)&0xffff-8;
+		len = (*(unsigned int *)(&buff[4]))&0xffff-8;
 		if ((len > count) || ((GLOBALMEM_SIZE) < len)){
 			PRINTK("%s:write packet is too long,len = %ld\n", __func__, count);
 			return -EINVAL;
 		}
 		
-		PRINTK("%s:len is %d\n", __func__, len);
-		ret = __copy_to_user(buf,buff,len); 
+		PRINTK("%s:len2 is %d\n", __func__, len);
+		ret = __copy_to_user(buf,buff+8,len); 
 		
 		if(ret<0)
 		{
