@@ -1018,9 +1018,9 @@ void recv_thread(void)
 			recvlen= recv_list[Rlisttail].status;
 			Change_BELE((unsigned char *)&recvlen);
 			Change_BELE((unsigned char *)&id);
-			id &= 0xff; 
+			//id &= 0xff; 
 			recvlen = recvlen & 0x7fffffff;
-		//	PRINTK("%d recv_thread habe data \n",id);
+			PRINTK("%d recv_thread habe data, recvlen:%d,Rlisttail:%d,pcie56_devs[%d].RHead:%d\n",id,recvlen,Rlisttail,id,pcie56_devs[id].RHead);
 			spin_lock_bh(&pcie56_devs[id].readlock);
 			if(((pcie56_devs[id].RHead+1)&MAX_NUM)/*%MAXRECVQL*/ != pcie56_devs[id].RTail){
 				recvbuff = pcie56_devs[id].devicerecvq[pcie56_devs[id].RHead].Buffer;
