@@ -91,7 +91,6 @@ Author: 706.ykx
 #define VENDOR_ID    		 0xd6fa        //pcie56 vendor id
 #define DEVICE_MAJOR           66
 
-MODULE_LICENSE("GPL");
 
 
 /////////////////////////////////////////////////////
@@ -2200,3 +2199,5 @@ EXPORT_SYMBOL(end_read);
 module_init(pcie56Drv_init);
 /* module_exit*/
 module_exit(pcie56Drv_cleanup);
+MODULE_LICENSE("GPL");
+
