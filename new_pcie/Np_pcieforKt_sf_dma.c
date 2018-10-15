@@ -73,6 +73,16 @@ Author: 706.ykx
 #define PRINTK(args...) do{}while(0)
 #endif
 
+#if 0
+/* to do next*/
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) && !defined(NEW_KERNEL_UBUNTU)
+#define NEW_KERNEL_UBUNTU  1
+#error "test 111"
+#endif
+#else
+#define NEW_KERNEL_UBUNTU  1
+#endif
+
 #define uchar unsigned char
 
 #define MIN(a,b)                   (((a)<(b))?(a):(b))
@@ -849,7 +859,11 @@ void start_sfrecv_dma(void)
 /**********************************************************************
  			send_thread
 **********************************************************************/
+#if NEW_KERNEL_UBUNTU
+int  send_thread(void *data)
+#else
 void send_thread(void)
+#endif
 {
 	int i,sendcount,recvhead,recvtail;
 	int idx = 0;
@@ -916,12 +930,19 @@ void send_thread(void)
 		remove_wait_queue(&sendinq,&wait1);
 
 	}
-	//end while 1 
+	//end while 1
+#if NEW_KERNEL_UBUNTU
+	return 0;
+#endif
 }
 /**********************************************************************
  			recv_thread
 **********************************************************************/
+#if NEW_KERNEL_UBUNTU
+int recv_thread(void *data)
+#else
 void recv_thread(void)
+#endif
 {
 	int id,recvlen,recvlisttail;
 	unsigned char* recvbuff;
@@ -991,6 +1012,9 @@ void recv_thread(void)
 	__set_current_state(TASK_RUNNING);
 	remove_wait_queue(&recvoutq,&wait1);		
 	}
+#if NEW_KERNEL_UBUNTU
+	return 0;
+#endif
 }
 
 /**********************************************************************
@@ -1005,7 +1029,11 @@ int pcie56_fasync(int fd, struct file *filp, int mode)
 /**********************************************************************
 		
 **********************************************************************/
+#if NEW_KERNEL_UBUNTU
+irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id)//struct pt_regs *regs)
+#else
 irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+#endif
 {
 
 	int IntStat= 0;
@@ -1942,8 +1970,8 @@ static int __init pcie56Drv_init(void)
 #endif
 	recv_list[i].RecvFlagtag2 = 0;
 
-	SetBuffer_BYTE_ChgBELE(recv_list, sizeof(struct recv_descriptor)*MAXRECVQL);
-	SetBuffer_BYTE_ChgBELE(sf_list, sizeof(struct recv_descriptor)*MAXRECVQL);
+	SetBuffer_BYTE_ChgBELE((const unsigned char*)recv_list, sizeof(struct recv_descriptor)*MAXRECVQL);
+	SetBuffer_BYTE_ChgBELE((const unsigned char*)sf_list, sizeof(struct recv_descriptor)*MAXRECVQL);
 	//SetBuffer_BYTE_ChgBELE(send_list, sizeof(struct send_descriptor)*MAXSENDQL);
 // 	Init wait queue
 	init_waitqueue_head(&sendinq);
