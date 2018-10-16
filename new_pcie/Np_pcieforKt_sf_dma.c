@@ -1289,8 +1289,8 @@ ssize_t pcie56_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	}else
 #endif
 	{//other data  ,they don't have header
+		len = ((*(unsigned int *)(&buff[4]))&0xffff)-8;
 	PRINTK("%s:len is %d\n", __func__, len);
-		len = (*(unsigned int *)(&buff[4]))&0xffff-8;
 		if ((len > count) || ((GLOBALMEM_SIZE) < len)){
 			PRINTK("%s:write packet is too long,len = %ld\n", __func__, count);
 			return -EINVAL;
@@ -1423,7 +1423,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		return -EINVAL;
 	}
 	
-	//PRINTK("<pcie_write>    dev->DeviceID is %d\n",dev->DeviceID);
+	PRINTK("<pcie_write>    dev->DeviceID is %d\n",dev->DeviceID);
 	
 	spin_lock_bh(&dev->writelock);
 	if( ((dev->SHead+1)&MAX_NUM) == dev->STail){
@@ -1493,6 +1493,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 		{
 
 		slen = count+8;
+		PRINTK("%s:write packet count:%d, len = %ld\n", __func__, count,slen);
 		//slen = (slen + 7)&0xfffffff8 ;
 		if (GLOBALMEM_SIZE < slen)
 		{
@@ -1552,6 +1553,7 @@ ssize_t pcie56_write(struct file * filp,const char __user * buf,size_t count,lof
 	PRINTK("<pcie56_write>:dev->SHead  is %d  slen: %d\n",dev->SHead,slen);
 	slen = (slen + 7)&0xfffffff8;
 	spin_lock_bh(&dev->writelock);
+	PRINTK("<pcie56_write>:dev->SHead  is %d  slen2: %d\n",dev->SHead,slen);
 	dev->devicesendq[dev->SHead].len = slen;
 	dev->devicesend[dev->Slisthead].length =( dev->devicesendq[dev->SHead].len+7)&0xfffffff8;
 	Change_BELE((char *)&dev->devicesend[dev->Slisthead].length );
