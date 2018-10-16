@@ -19,6 +19,12 @@
 
 #define BLOCKSIZE 7168
 
+#define USER_RDY        0x00088000
+#define USER_LOOP       0x00088010
+#define USER_READ       0x00088020
+
+
+
 struct bufctl{
 	int16_t  pkt_ID;	
 	int16_t  pkt_length;/*Not  Single  MultiBegin  MultiCtn  MultiEnd */
@@ -228,24 +234,44 @@ int main(int argc,char* argv[])
 #if 1
 	    printf("enter 's' to start\n");
 	    printf("enter 'n' to exit\n");
-		printf("enter 't' to test\n");
 		printf("enter 'r' to read\n");
+		printf("enter 'R' to read reg\n");
 		printf("enter 'w' to write\n");
+		printf("enter 'y' to set RDY mode\n");
+		printf("enter 'Y' to set loop mode\n");
 	    c=getchar();
 	    if(c == 'n')
 		{
 			close(devs[0].fd);
 			exit(1);
 		}
-		else if(c == 't')
-			{
-				int reg;
-				printf("enter reg(\\%x) to test\n");
-				scanf("%x",&reg);
-				nfds = ioctl(devs[0].fd,0x00080005,reg);
-				printf("config test reg:0x%x,data:0x%x\n",reg,nfds);
-				continue;
-			}
+		else if(c == 'y')
+		{
+			int data;
+			printf("enter data(\%x) to RDY!\n");
+			scanf("%x",&data);
+			nfds = ioctl(devs[0].fd,USER_RDY,&data);
+			printf("config RDY reg -> 0x%x !\n",data);
+			continue;
+		}
+		else if(c == 'Y')
+		{
+			int data;
+			printf("enter data(\%x) to LOOP!\n");
+			scanf("%x",&data);
+			nfds = ioctl(devs[0].fd,USER_LOOP,&data);
+			printf("config LOOP reg -> 0x%x !\n",data);
+			continue;
+		}
+		else if(c == 'R')
+		{
+			int data;
+			printf("enter reg(\%x) to read!\n");
+			scanf("%x",&data);
+			nfds = ioctl(devs[0].fd,USER_READ,&data);
+			printf("config read reg: 0x%x,data:0x%x !\n",data,nfds);
+			continue;
+		}
 		else if(c == 'r')
 		{
 			memset(rebuffer, 0, 8192);
