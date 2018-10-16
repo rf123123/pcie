@@ -55,6 +55,15 @@ Author: 706.ykx
 #define FPGA_DESTROY	0x0008000a
 
 
+#define USER_RDY        0x00088000
+#define USER_LOOP       0x00088010
+#define USER_READ       0x00088020
+
+
+#define REG_USER_START  0x100
+
+
+
 #define DEVICE_COUNT 1   //6
 #define GLRZ_MAX   0x11;
 
@@ -1064,7 +1073,8 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
 	//int i;
 	int j = 0;
-	int ret;
+	int ret=0;
+	unsigned int reg;
 	//int nolen;
 	//unsigned int fpga_data;
 	//unsigned char fpga_p[4096];
@@ -1213,6 +1223,47 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				PRINTK("<pcie56_ioctl>set FPGA_CH_MODE 1 ! \n");
 			}
 			break;
+	case USER_RDY:
+			ret = *(unsigned int *)(arg);
+			
+			if(ret <= 3)
+			{
+				write_BAR0(REG_USER_START+0,0);
+				PRINTK("<pcie56_ioctl>set REG_USER_START mode:%d ! \n",ret);
+			}
+			else
+			{
+				PRINTK("<pcie56_ioctl>set REG_USER_START invaild mode:%d ! \n",ret);
+			}
+			break;
+
+	case USER_LOOP:
+		ret = *(unsigned int *)(arg);
+		
+		if(ret <= 1)
+		{
+			write_BAR0(REG_USER_START+1,0);
+			PRINTK("<pcie56_ioctl>set USER_LOOP mode:%d ! \n",ret);
+		}
+		else
+		{
+			PRINTK("<pcie56_ioctl>set USER_LOOP invaild mode:%d ! \n",ret);
+		}
+		break;
+	
+	case USER_READ:
+		reg = *(unsigned int *)(arg);
+		if(reg < REG_USER_START)
+		{
+			PRINTK("<pcie56_ioctl> USER_READ reg:0x%x invaild (reg < 0x100) ! \n",reg,ret);
+		}
+		else
+		{
+			ret = read_BAR0(reg);
+			PRINTK("<pcie56_ioctl> USER_READ reg:0x%x, data:0x%x ! \n",reg,ret);
+		}
+		break;
+
 	default:
 			ret = -ECHRNG;
 			break;
