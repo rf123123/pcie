@@ -25,6 +25,7 @@ Author: 706.ykx
 #include <linux/wait.h>
 #include <asm/uaccess.h>
 #include <linux/cdev.h>
+#include <linux/sched/signal.h>
 #include <linux/sched.h> 
 #include <linux/mutex.h>
 #include <linux/poll.h>
