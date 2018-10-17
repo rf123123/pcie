@@ -250,7 +250,7 @@ int main(int argc,char* argv[])
 			int data;
 			printf("enter data(\%x) to RDY!\n");
 			scanf("%x",&data);
-			nfds = ioctl(devs[0].fd,USER_RDY,&data);
+			nfds = ioctl(devs[0].fd,USER_RDY,data);
 			printf("config RDY reg -> 0x%x !\n",data);
 			continue;
 		}
@@ -259,7 +259,7 @@ int main(int argc,char* argv[])
 			int data;
 			printf("enter data(\%x) to LOOP!\n");
 			scanf("%x",&data);
-			nfds = ioctl(devs[0].fd,USER_LOOP,&data);
+			nfds = ioctl(devs[0].fd,USER_LOOP,data);
 			printf("config LOOP reg -> 0x%x !\n",data);
 			continue;
 		}
@@ -268,7 +268,7 @@ int main(int argc,char* argv[])
 			int data;
 			printf("enter reg(\%x) to read!\n");
 			scanf("%x",&data);
-			nfds = ioctl(devs[0].fd,USER_READ,&data);
+			nfds = ioctl(devs[0].fd,USER_READ,data);
 			printf("config read reg: 0x%x,data:0x%x !\n",data,nfds);
 			continue;
 		}
