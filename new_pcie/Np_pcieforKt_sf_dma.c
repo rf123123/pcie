@@ -71,7 +71,7 @@ Author: 706.ykx
 #define Version2
 
 //#define Server 0
-//#define DEBUG
+#define DEBUG
 
 #define PCIE_INT 1
 
@@ -1253,11 +1253,11 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			}
 			break;
 	case USER_RDY:
-			ret = *(unsigned int *)(arg);
+			ret = (unsigned int )(arg);
 			
 			if(ret <= 3)
 			{
-				write_BAR0(REG_USER_START+0,0);
+				write_BAR0(REG_USER_START+0,ret);
 				PRINTK("<pcie56_ioctl>set REG_USER_START mode:%d ! \n",ret);
 			}
 			else
@@ -1267,11 +1267,11 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			break;
 
 	case USER_LOOP:
-		ret = *(unsigned int *)(arg);
+		ret = (unsigned int )(arg);
 		
 		if(ret <= 1)
 		{
-			write_BAR0(REG_USER_START+1,0);
+			write_BAR0(REG_USER_START+4,ret);
 			PRINTK("<pcie56_ioctl>set USER_LOOP mode:%d ! \n",ret);
 		}
 		else
@@ -1281,7 +1281,7 @@ irqreturn_t pcie56Drv_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		break;
 	
 	case USER_READ:
-		reg = *(unsigned int *)(arg);
+		reg = (unsigned int )(arg);
 		if(reg < REG_USER_START)
 		{
 			PRINTK("<pcie56_ioctl> USER_READ reg:0x%x invaild (reg < 0x100) ! \n",reg,ret);
